@@ -1,0 +1,84 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsTrimmable>true</IsTrimmable>
+    <!-- Analysis -->
+    <SuppressTrimAnalysisWarnings>false</SuppressTrimAnalysisWarnings>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnableSingleFileAnalyzer>true</EnableSingleFileAnalyzer>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisMode>All</AnalysisMode>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <CodeAnalysisTreatWarningsAsErrors>true</CodeAnalysisTreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CA1303;CS3021</NoWarn>
+    <!-- Analysis -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <LinkerDescriptor Include="link.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="images\yamagoya.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="images\github.png" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <ApplicationIcon>images\yamagoya.ico</ApplicationIcon>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+    <DebugSymbols>False</DebugSymbols>
+    <DebugType>None</DebugType>
+    <PublishTrimmed>false</PublishTrimmed>
+    <TrimmerRemoveSymbols>true</TrimmerRemoveSymbols>
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <AssemblyVersion>0.0.1</AssemblyVersion>
+    <FileVersion>0.0.1</FileVersion>
+    <Company>JPCERT/CC</Company>
+    <Authors>JPCERT/CC</Authors>
+    <Product>YAMAGoya</Product>
+    <Description>Yet Another Memory Analyzer for malware detection and Guarding Operations with YARA and SIGMA</Description>
+    <Copyright>© 1996-2025 JPCERT/CC</Copyright>
+  </PropertyGroup>
+
+  <ItemGroup>
+      <None Update="Yama.dll">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+          <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+      </None>
+  </ItemGroup>
+
+  <ItemGroup>
+      <None Update="Install.bat">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+          <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+      </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Antlr4.Runtime.Standard" Version="4.13.1" />
+    <PackageReference Include="DynamicExpresso.Core" Version="2.17.2" />
+    <PackageReference Include="MaterialDesignColors" Version="5.2.1" />
+    <PackageReference Include="MaterialDesignThemes" Version="5.2.1" />
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.1.19" />
+    <PackageReference Include="System.Diagnostics.EventLog" Version="9.0.3" />
+    <PackageReference Include="YamlDotNet" Version="16.3.0" />
+  </ItemGroup>
+
+</Project>

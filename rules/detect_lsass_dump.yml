@@ -1,0 +1,9 @@
+rulename: "Detect_open_lsass"
+description: "Open lsass.exe process to dump memory and extract credentials"
+rules:
+  - ruletype: "regex"
+    target: "open"
+    rule: "lsass\\.exe$"
+  - ruletype: "regex"
+    target: "file"
+    rule: "\\.dmp$|\\.dmp$"

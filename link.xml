@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<linker>
+  <assembly fullname="Microsoft.Diagnostics.FastSerialization" preserve="all" />
+  <assembly fullname="Microsoft.Diagnostics.Tracing.TraceEvent" preserve="all" />
+  <assembly fullname="YamlDotNet" preserve="all" />
+</linker>

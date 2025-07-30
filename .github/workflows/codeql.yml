@@ -1,0 +1,73 @@
+name: "CodeQL Advanced"
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'core/**'
+      - 'resource/**'
+      - 'App.xaml'
+      - 'App.xaml.cs'
+      - 'MainWindow.xaml'
+      - 'MainWindow.xaml.cs'
+      - 'Program.cs'
+      - 'Yama.dll'
+      - 'install.bat'
+      - 'YAMAGoya.csproj'
+      - '.github/workflows/codeql.yml'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'core/**'
+      - 'resource/**'
+      - 'App.xaml'
+      - 'App.xaml.cs'
+      - 'MainWindow.xaml'
+      - 'MainWindow.xaml.cs'
+      - 'Program.cs'
+      - 'Yama.dll'
+      - 'install.bat'
+      - 'YAMAGoya.csproj'
+      - '.github/workflows/codeql.yml'
+  schedule:
+    - cron: '0 2 * * 1'
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: windows-latest
+    timeout-minutes: 360
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'csharp' ]
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: ${{ matrix.language }}
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet build --configuration Release -r win-x64 --no-restore
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
+      with:
+        category: "/language:${{matrix.language}}"

@@ -1,0 +1,76 @@
+name: test
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'core/**'
+      - 'resource/**'
+      - 'App.xaml'
+      - 'App.xaml.cs'
+      - 'MainWindow.xaml'
+      - 'MainWindow.xaml.cs'
+      - 'Program.cs'
+      - 'Yama.dll'
+      - 'install.bat'
+      - 'YAMAGoya.csproj'
+      - '.github/workflows/test.yml'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'core/**'
+      - 'resource/**'
+      - 'App.xaml'
+      - 'App.xaml.cs'
+      - 'MainWindow.xaml'
+      - 'MainWindow.xaml.cs'
+      - 'Program.cs'
+      - 'Yama.dll'
+      - 'install.bat'
+      - 'YAMAGoya.csproj'
+      - '.github/workflows/test.yml'
+      
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release  -r win-x64 --no-restore
+
+      - name: Test
+        run: dotnet test --configuration Release  -r win-x64 --no-build
+
+      - name: Test session
+        run: dotnet run -- -s
+
+      - name: Test detection
+        run: dotnet run -- -d rules -a --verbose
+        timeout-minutes: 1
+        continue-on-error: true
+
+      - name: Test release
+        run: dotnet publish -c Release -r win-x64 -p:PublishSingleFile=true -p:PublishTrimmed=false -o out
+        continue-on-error: true
+
+      - name: zip build artifacts
+        run: Compress-Archive -Path out/* -DestinationPath yamagoya.zip -Force
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: yamagoya
+          path: yamagoya.zip

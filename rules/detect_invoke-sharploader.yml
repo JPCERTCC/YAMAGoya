@@ -1,0 +1,12 @@
+rulename: "PowerShell_command_activity"
+description: "Detects Invoke-SharpLoader.ps1"
+rules:
+  - ruletype: "regex"
+    target: "powershell"
+    rule: "MemoryStream"
+  - ruletype: "regex"
+    target: "powershell"
+    rule: "GZipStream"
+  - ruletype: "regex"
+    target: "powershell"
+    rule: "EntryPoint.Invoke"

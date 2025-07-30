@@ -1,0 +1,323 @@
+<Window x:Class="YAMAGoya.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        Title="YAMAGoya" Height="530" Width="800"
+        xmlns:local="clr-namespace:YAMAGoya"
+        WindowStartupLocation="CenterScreen"
+        AutomationProperties.Name="YAMAGoya Security Monitoring Application"
+        AutomationProperties.HelpText="Application for detecting malicious processes using ETW sessions">
+    <DockPanel>
+        <!-- Title Bar -->
+        <Border DockPanel.Dock="Top" Background="{DynamicResource MaterialDesignPaper}" Height="60" Padding="2"
+                AutomationProperties.Name="Application Header">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Image Grid.Column="0" Source="pack://application:,,,/images/yamagoya.png" Stretch="Uniform" VerticalAlignment="Center" Margin="100,0,0,0"
+                       AutomationProperties.Name="YAMAGoya Logo"/>
+                <Button Grid.Column="1" Style="{StaticResource MaterialDesignFlatButton}" 
+                        Background="Transparent" BorderThickness="0" ToolTip="View on GitHub" 
+                        Click="BtnGitHub_Click"
+                        AutomationProperties.Name="GitHub Repository Link"
+                        AutomationProperties.HelpText="Opens the YAMAGoya GitHub repository in your default browser"
+                        TabIndex="1">
+                    <materialDesign:PackIcon Kind="Github" Width="35" Height="35" Margin="-5" Foreground="Black"/>
+                </Button>
+            </Grid>
+        </Border>
+        <!-- Main Content -->
+        <Grid>
+            <TabControl Style="{StaticResource MaterialDesignNavigationRailTabControl}" SelectionChanged="TabControl_SelectionChanged"
+                        AutomationProperties.Name="Main Navigation Tabs"
+                        TabIndex="2">
+                <!-- Main Tab -->
+                <TabItem Header="{materialDesign:PackIcon Kind=Play, Size=30}"
+                         AutomationProperties.Name="Main Control Tab"
+                         AutomationProperties.HelpText="Configure rules and start/stop detection">
+                    <Grid Margin="10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <materialDesign:Card Grid.Row="0" Padding="0" Margin="0" Height="150" Background="LightCoral" x:Name="txtSessionStatusBackground"
+                                           AutomationProperties.Name="Session Status Display"
+                                           AutomationProperties.LiveSetting="Polite">
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <materialDesign:PackIcon x:Name="sessionStatusIcon" Kind="information" Foreground="White" Width="25" Height="25" Margin="5"
+                                                       AutomationProperties.Name="Status Icon"/>
+                                <TextBlock x:Name="txtSessionStatus" Text="ETW Session Not Running" FontSize="25" Foreground="White" VerticalAlignment="Center"
+                                         AutomationProperties.Name="Session Status Text"
+                                         AutomationProperties.LiveSetting="Polite"/>
+                            </StackPanel>
+                        </materialDesign:Card>
+                        <StackPanel Orientation="Horizontal" Grid.Row="1" HorizontalAlignment="Center" Margin="0,0,0,10">
+                            <TextBlock Style="{DynamicResource MaterialDesignButtonTextBlock}" Text="Rules folder:" VerticalAlignment="Center" Margin="5"
+                                     AutomationProperties.Name="Rules Folder Label"/>
+                            <TextBox Style="{DynamicResource MaterialDesignTextBox}" x:Name="txtRulesFolder" Width="400" VerticalAlignment="Center" Margin="5"
+                                   AutomationProperties.Name="Rules Folder Path"
+                                   AutomationProperties.HelpText="Enter the path to the folder containing detection rules"
+                                   TabIndex="3"/>
+                            <Button Style="{StaticResource MaterialDesignRaisedDarkButton}" x:Name="btnBrowseRules" Content="Browse..." Margin="5" Width="80" Height="25" Click="BtnBrowseRules_Click"
+                                  AutomationProperties.Name="Browse Rules Folder"
+                                  AutomationProperties.HelpText="Open folder browser to select rules directory"
+                                  TabIndex="4"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Grid.Row="3" HorizontalAlignment="Center" Margin="0,0,0,10">
+                            <Button Style="{StaticResource MaterialDesignRaisedDarkButton}" x:Name="btnStartDetection" Content="Start Detection" FontSize="15" Margin="5" Width="340" Height="50" Click="BtnStartDetection_Click"
+                                  AutomationProperties.Name="Start Detection"
+                                  AutomationProperties.HelpText="Begin monitoring system for malicious processes using configured rules"
+                                  TabIndex="5"/>
+                            <Button Style="{StaticResource MaterialDesignRaisedLightButton}" x:Name="btnStopDetection" Content="Stop Detection" FontSize="15" Margin="5" Width="340" Height="50" Click="BtnStopDetection_Click"
+                                  AutomationProperties.Name="Stop Detection"
+                                  AutomationProperties.HelpText="Stop the currently running detection process"
+                                  TabIndex="6"/>
+                        </StackPanel>
+                    </Grid>
+                </TabItem>
+
+                <!-- Log Tab -->
+                <TabItem Header="{materialDesign:PackIcon Kind=Bell, Size=25}"
+                         AutomationProperties.Name="Alert Monitoring Tab"
+                         AutomationProperties.HelpText="View detected alerts and open log files">
+                    <Grid Margin="10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <GroupBox Style="{DynamicResource MaterialDesignCardGroupBox}" Grid.Row="0" Header="Alert Monitoring" Margin="10"
+                                AutomationProperties.Name="Alert List Container">
+                            <ListBox Style="{DynamicResource MaterialDesignListBox}" x:Name="lstAlerts"
+                                   AutomationProperties.Name="Alert List"
+                                   AutomationProperties.HelpText="List of detected security alerts with timestamps"
+                                   AutomationProperties.LiveSetting="Polite"
+                                   TabIndex="7">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Message}" Foreground="{Binding Foreground}" />
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </GroupBox>
+                        <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Grid.Row="1" VerticalAlignment="Center">
+                            <Button Style="{StaticResource MaterialDesignRaisedDarkButton}" x:Name="btnOpenLog" Content="Open Log File" Margin="5" Width="150" Height="30" Click="BtnOpenLog_Click"
+                                  AutomationProperties.Name="Open Log File"
+                                  AutomationProperties.HelpText="Open the current log file in the default text editor"
+                                  TabIndex="8"/>
+                        </StackPanel>
+                    </Grid>
+                </TabItem>
+
+                <!-- Settings Tab -->
+                <TabItem Header="{materialDesign:PackIcon Kind=Settings, Size=25}"
+                         AutomationProperties.Name="Settings Tab"
+                         AutomationProperties.HelpText="Configure detection options and logging settings">
+                    <Grid Margin="10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <StackPanel Orientation="Horizontal" Grid.Row="0" HorizontalAlignment="Left" Margin="0,0,0,10">
+                            <ToggleButton Style="{StaticResource MaterialDesignSwitchToggleButton}" x:Name="tgbKillProcess" Height="30" VerticalAlignment="Center" Margin="5"
+                                        AutomationProperties.Name="Kill Process Mode Toggle"
+                                        AutomationProperties.HelpText="When enabled, automatically terminates detected malicious processes"
+                                        TabIndex="9"/>
+                            <TextBlock Style="{DynamicResource MaterialDesignButtonTextBlock}" Text=":Kill process mode" VerticalAlignment="Center" Margin="5"/>
+                        </StackPanel>
+                        <Separator Style="{DynamicResource MaterialDesignDarkSeparator}" Grid.Row="1"/>
+                        <StackPanel Orientation="Horizontal" Grid.Row="2" HorizontalAlignment="Left" Margin="0,0,0,10">
+                            <ToggleButton Style="{StaticResource MaterialDesignSwitchToggleButton}" x:Name="tgbUseSigma" Height="30" VerticalAlignment="Center" Margin="5"
+                                        AutomationProperties.Name="Use SIGMA Rules Toggle"
+                                        AutomationProperties.HelpText="Enable SIGMA rule format instead of original YAML rules"
+                                        TabIndex="10"/>
+                            <TextBlock Style="{DynamicResource MaterialDesignButtonTextBlock}" Text=":Use SIGMA rules (default is use original YAML rule)" VerticalAlignment="Center" Margin="5"/>
+                        </StackPanel>
+                        <Separator Style="{DynamicResource MaterialDesignDarkSeparator}" Grid.Row="3"/>
+                        <StackPanel Orientation="Horizontal" Grid.Row="4" HorizontalAlignment="Left" Margin="0,0,0,10">
+                            <ToggleButton Style="{StaticResource MaterialDesignSwitchToggleButton}" x:Name="tgbUseYara" Height="30" VerticalAlignment="Center" Margin="5"
+                                        AutomationProperties.Name="Use YARA Scanning Toggle"
+                                        AutomationProperties.HelpText="Enable YARA memory scanning with configurable interval"
+                                        TabIndex="11"/>
+                            <TextBlock Style="{DynamicResource MaterialDesignButtonTextBlock}" Text=":Use YARA scanning on memory (default scan interval is 1 hour)" VerticalAlignment="Center" Margin="5"/>
+                            <TextBox Style="{DynamicResource MaterialDesignTextBox}" x:Name="txtMemoryScanInterval" Text="1" Width="100" VerticalAlignment="Center" Margin="5"
+                                   AutomationProperties.Name="Memory Scan Interval"
+                                   AutomationProperties.HelpText="Scan interval in hours for YARA memory scanning"
+                                   TabIndex="12"/>
+                        </StackPanel>
+                        <Separator Style="{DynamicResource MaterialDesignDarkSeparator}" Grid.Row="5"/>
+                        <StackPanel Orientation="Horizontal" Grid.Row="6" HorizontalAlignment="Left" Margin="0,0,0,10">
+                            <ToggleButton Style="{StaticResource MaterialDesignSwitchToggleButton}" x:Name="tgbEventLog" IsChecked="True" Height="30" VerticalAlignment="Center" Margin="5"
+                                        AutomationProperties.Name="Event Log Toggle"
+                                        AutomationProperties.HelpText="Enable logging alerts to Windows Event Log"
+                                        TabIndex="13"/>
+                            <TextBlock Style="{DynamicResource MaterialDesignButtonTextBlock}" Text=":Log to the event log" VerticalAlignment="Center" Margin="5"/>
+                        </StackPanel>
+                        <Separator Style="{DynamicResource MaterialDesignDarkSeparator}" Grid.Row="7"/>
+                        <StackPanel Orientation="Horizontal" Grid.Row="8" HorizontalAlignment="Left" Margin="0,0,0,10">
+                            <ToggleButton Style="{StaticResource MaterialDesignSwitchToggleButton}" x:Name="tgbTextLog" IsChecked="True" Height="30" VerticalAlignment="Center" Margin="5"
+                                        AutomationProperties.Name="Text Log Toggle"
+                                        AutomationProperties.HelpText="Enable logging alerts to text files"
+                                        TabIndex="14"/>
+                            <TextBlock Style="{DynamicResource MaterialDesignButtonTextBlock}" Text=":Log to the text file" VerticalAlignment="Center" Margin="5"/>
+                            <TextBox Style="{DynamicResource MaterialDesignTextBox}" x:Name="txtLogFolder" Width="300" Text="logs" VerticalAlignment="Center" Margin="5"
+                                   AutomationProperties.Name="Log Folder Path"
+                                   AutomationProperties.HelpText="Directory path for storing log files"
+                                   TabIndex="15"/>
+                            <Button Style="{StaticResource MaterialDesignRaisedDarkButton}" x:Name="btnBrowseLogs" Content="Browse..." Margin="5" Width="80" Height="25" Click="BtnBrowseLogs_Click"
+                                  AutomationProperties.Name="Browse Log Folder"
+                                  AutomationProperties.HelpText="Open folder browser to select log directory"
+                                  TabIndex="16"/>
+                        </StackPanel>
+                        <Separator Style="{DynamicResource MaterialDesignDarkSeparator}" Grid.Row="9"/>
+                        <StackPanel Orientation="Horizontal" Grid.Row="10" HorizontalAlignment="Left" Margin="0,0,0,10">
+                            <ToggleButton Style="{StaticResource MaterialDesignSwitchToggleButton}" x:Name="tgbSessionName" Height="30" VerticalAlignment="Center" Margin="5"
+                                        AutomationProperties.Name="Custom Session Name Toggle"
+                                        AutomationProperties.HelpText="Enable custom ETW session name instead of default"
+                                        TabIndex="17"/>
+                            <TextBlock Style="{DynamicResource MaterialDesignButtonTextBlock}" Text="Use custom ETW session name" VerticalAlignment="Center" Margin="5"/>
+                            <TextBox Style="{DynamicResource MaterialDesignTextBox}" x:Name="txtSessionName" Text="YAMAGoya" Width="300" VerticalAlignment="Center" Margin="5"
+                                   AutomationProperties.Name="ETW Session Name"
+                                   AutomationProperties.HelpText="Custom name for the ETW (Event Tracing for Windows) session"
+                                   TabIndex="18"/>
+                        </StackPanel>
+                    </Grid>
+                </TabItem>
+
+                <!-- Help Tab -->
+                <TabItem Header="{materialDesign:PackIcon Kind=Help, Size=25}" x:Name="helpTabItem"
+                         AutomationProperties.Name="Help Tab"
+                         AutomationProperties.HelpText="Application documentation and usage instructions">
+                    <Grid Margin="10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" x:Name="helpScrollViewer"
+                                    AutomationProperties.Name="Help Documentation"
+                                    TabIndex="19">
+                            <StackPanel Margin="16">
+                                <GroupBox Header="Overview" Margin="0,0,0,10"
+                                        AutomationProperties.Name="Application Overview Section">
+                                    <TextBlock TextWrapping="Wrap" Margin="8"
+                                             AutomationProperties.Name="Overview Description">
+                                        YAMAGoya is a tool that uses ETW sessions to detect malicious processes.
+                                        It monitors suspicious activities on the system in real-time using YAML rules, SIGMA rules, and YARA rules.
+                                    </TextBlock>
+                                </GroupBox>
+
+                                <GroupBox Header="Main Tab" Margin="0,0,0,10"
+                                        AutomationProperties.Name="Main Tab Help Section">
+                                    <StackPanel Margin="8">
+                                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,5"
+                                                 AutomationProperties.Name="Rules Folder Help">
+                                            <Bold>Rules Folder</Bold>: Specify the folder containing rule files used for detection.
+                                        </TextBlock>
+                                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,5"
+                                                 AutomationProperties.Name="Start Detection Help">
+                                            <Bold>Start Detection</Bold>: Start an ETW session and begin monitoring using the specified rules.
+                                        </TextBlock>
+                                        <TextBlock TextWrapping="Wrap"
+                                                 AutomationProperties.Name="Stop Detection Help">
+                                            <Bold>Stop Detection</Bold>: Stop the running detection process.
+                                        </TextBlock>
+                                    </StackPanel>
+                                </GroupBox>
+
+                                <GroupBox Header="Alert Monitoring Tab" Margin="0,0,0,10"
+                                        AutomationProperties.Name="Alert Monitoring Help Section">
+                                    <StackPanel Margin="8">
+                                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,5"
+                                                 AutomationProperties.Name="Alert Display Help">
+                                            Displays a list of detected alerts. Each alert includes a timestamp and message.
+                                        </TextBlock>
+                                        <TextBlock TextWrapping="Wrap"
+                                                 AutomationProperties.Name="Open Log File Help">
+                                            <Bold>Open Log File</Bold>: Open the current log file in the default text editor.
+                                        </TextBlock>
+                                    </StackPanel>
+                                </GroupBox>
+
+                                <GroupBox Header="Settings Tab" Margin="0,0,0,10"
+                                        AutomationProperties.Name="Settings Help Section">
+                                    <StackPanel Margin="8">
+                                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,5"
+                                                 AutomationProperties.Name="Process Termination Help">
+                                            <Bold>Process Termination Mode</Bold>: Automatically terminate detected malicious processes.
+                                        </TextBlock>
+                                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,5"
+                                                 AutomationProperties.Name="Use SIGMA Rules Help">
+                                            <Bold>Use SIGMA Rules</Bold>: Use SIGMA rules instead of original YAML rules.
+                                        </TextBlock>
+                                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,5"
+                                                 AutomationProperties.Name="Use YARA Scanning Help">
+                                            <Bold>Use YARA Scanning</Bold>: Enable YARA scanning on memory. You can set the scan interval in hours.
+                                        </TextBlock>
+                                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,5"
+                                                 AutomationProperties.Name="Event Log Help">
+                                            <Bold>Log to Event Log</Bold>: Record alerts in the Windows event log.
+                                        </TextBlock>
+                                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,5"
+                                                 AutomationProperties.Name="Text Log Help">
+                                            <Bold>Log to Text File</Bold>: Create log files in the specified folder.
+                                        </TextBlock>
+                                        <TextBlock TextWrapping="Wrap"
+                                                 AutomationProperties.Name="Custom ETW Session Name Help">
+                                            <Bold>Custom ETW Session Name</Bold>: Specify a custom name for the ETW session.
+                                        </TextBlock>
+                                    </StackPanel>
+                                </GroupBox>
+
+                                <GroupBox Header="System Tray" Margin="0,0,0,10"
+                                        AutomationProperties.Name="System Tray Help Section">
+                                    <StackPanel Margin="8">
+                                        <TextBlock TextWrapping="Wrap"
+                                                 AutomationProperties.Name="System Tray Description">
+                                            The window is stored in the system tray when minimized. Double-click the tray icon to display the application again.
+                                            You can also open or exit the application from the right-click menu.
+                                        </TextBlock>
+                                    </StackPanel>
+                                </GroupBox>
+
+                                <GroupBox Header="Notes" Margin="0,0,0,10"
+                                        AutomationProperties.Name="Important Notes Section">
+                                    <StackPanel Margin="8">
+                                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,5"
+                                                 AutomationProperties.Name="Admin Privileges Note">
+                                            • This application needs to be run with <Bold>administrator privileges</Bold>.
+                                        </TextBlock>
+                                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,5"
+                                                 AutomationProperties.Name="Detection Accuracy Note">
+                                            • The accuracy of detection depends on the quality of the rules.
+                                        </TextBlock>
+                                        <TextBlock TextWrapping="Wrap"
+                                                 AutomationProperties.Name="Process Termination Caution">
+                                            • Please use process termination mode with caution. Normal processes may be terminated by mistake.
+                                        </TextBlock>
+                                    </StackPanel>
+                                </GroupBox>
+
+                                <TextBlock TextWrapping="Wrap" HorizontalAlignment="Center" Margin="0,10,0,0"
+                                         AutomationProperties.Name="GitHub Repository Link">
+                                    For detailed information, please refer to the <Hyperlink NavigateUri="https://github.com/JPCERTCC/YAMAGoya" RequestNavigate="Hyperlink_RequestNavigate"
+                                                                                          AutomationProperties.Name="GitHub Repository"
+                                                                                          AutomationProperties.HelpText="Opens the YAMAGoya GitHub repository">GitHub repository</Hyperlink>.
+                                </TextBlock>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Grid>
+                </TabItem>
+            </TabControl>
+        </Grid>
+    </DockPanel>
+</Window>

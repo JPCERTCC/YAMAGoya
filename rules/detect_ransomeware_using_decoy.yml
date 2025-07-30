@@ -1,0 +1,12 @@
+rulename: "Decoy_file_deleted"
+description: "Detecting ransomware using decoy files"
+rules:
+  - ruletype: "regex"
+    target: "delfile"
+    rule: "decoy\\.docx$"
+  - ruletype: "regex"
+    target: "delfile"
+    rule: "decoy\\.png$"
+  - ruletype: "regex"
+    target: "delfile"
+    rule: "decoy\\.txt$"
