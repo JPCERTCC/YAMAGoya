@@ -34,9 +34,14 @@
                         AutomationProperties.Name="Main Navigation Tabs"
                         TabIndex="2">
                 <!-- Main Tab -->
-                <TabItem Header="{materialDesign:PackIcon Kind=Play, Size=30}"
-                         AutomationProperties.Name="Main Control Tab"
+                <TabItem AutomationProperties.Name="Main Control Tab"
                          AutomationProperties.HelpText="Configure rules and start/stop detection">
+                    <TabItem.Header>
+                        <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                            <materialDesign:PackIcon Kind="Play" Width="30" Height="30" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Main" FontSize="12" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </TabItem.Header>
                     <Grid Margin="10">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*"/>
@@ -80,9 +85,14 @@
                 </TabItem>
 
                 <!-- Log Tab -->
-                <TabItem Header="{materialDesign:PackIcon Kind=Bell, Size=25}"
-                         AutomationProperties.Name="Alert Monitoring Tab"
+                <TabItem AutomationProperties.Name="Alert Monitoring Tab"
                          AutomationProperties.HelpText="View detected alerts and open log files">
+                    <TabItem.Header>
+                        <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                            <materialDesign:PackIcon Kind="Bell" Width="25" Height="25" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Alert" FontSize="12" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </TabItem.Header>
                     <Grid Margin="10">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*"/>
@@ -94,10 +104,28 @@
                                    AutomationProperties.Name="Alert List"
                                    AutomationProperties.HelpText="List of detected security alerts with timestamps"
                                    AutomationProperties.LiveSetting="Polite"
-                                   TabIndex="7">
+                                   TabIndex="7"
+                                   SelectionChanged="LstAlerts_SelectionChanged"
+                                   MouseDoubleClick="LstAlerts_MouseDoubleClick">
+                                <ListBox.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="Copy Log Message" Click="CopyLogMessage_Click"
+                                                AutomationProperties.Name="Copy Log Message"
+                                                AutomationProperties.HelpText="Copy the selected log message to clipboard"/>
+                                        <MenuItem Header="Copy Full Details" Click="CopyFullDetails_Click"
+                                                AutomationProperties.Name="Copy Full Details"
+                                                AutomationProperties.HelpText="Copy the full log details including timestamp to clipboard"/>
+                                    </ContextMenu>
+                                </ListBox.ContextMenu>
                                 <ListBox.ItemTemplate>
                                     <DataTemplate>
-                                        <TextBlock Text="{Binding Message}" Foreground="{Binding Foreground}" />
+                                        <Grid Margin="2">
+                                            <TextBlock Foreground="{Binding Foreground}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis">
+                                                <Run Text="{Binding Timestamp}" Foreground="Gray" FontSize="10"/>
+                                                <Run Text=" - " Foreground="Gray"/>
+                                                <Run Text="{Binding ShortMessage}" FontWeight="Bold"/>
+                                            </TextBlock>
+                                        </Grid>
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>
                             </ListBox>
@@ -112,9 +140,14 @@
                 </TabItem>
 
                 <!-- Settings Tab -->
-                <TabItem Header="{materialDesign:PackIcon Kind=Settings, Size=25}"
-                         AutomationProperties.Name="Settings Tab"
+                <TabItem AutomationProperties.Name="Settings Tab"
                          AutomationProperties.HelpText="Configure detection options and logging settings">
+                    <TabItem.Header>
+                        <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                            <materialDesign:PackIcon Kind="Settings" Width="25" Height="25" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Settings" FontSize="12" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </TabItem.Header>
                     <Grid Margin="10">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -134,15 +167,15 @@
                                         AutomationProperties.Name="Kill Process Mode Toggle"
                                         AutomationProperties.HelpText="When enabled, automatically terminates detected malicious processes"
                                         TabIndex="9"/>
-                            <TextBlock Style="{DynamicResource MaterialDesignButtonTextBlock}" Text=":Kill process mode" VerticalAlignment="Center" Margin="5"/>
+                            <TextBlock Style="{DynamicResource MaterialDesignButtonTextBlock}" Text="Kill process mode" VerticalAlignment="Center" Margin="5"/>
                         </StackPanel>
                         <Separator Style="{DynamicResource MaterialDesignDarkSeparator}" Grid.Row="1"/>
                         <StackPanel Orientation="Horizontal" Grid.Row="2" HorizontalAlignment="Left" Margin="0,0,0,10">
                             <ToggleButton Style="{StaticResource MaterialDesignSwitchToggleButton}" x:Name="tgbUseSigma" Height="30" VerticalAlignment="Center" Margin="5"
-                                        AutomationProperties.Name="Use SIGMA Rules Toggle"
-                                        AutomationProperties.HelpText="Enable SIGMA rule format instead of original YAML rules"
+                                        AutomationProperties.Name="Use Sigma Rules Toggle"
+                                        AutomationProperties.HelpText="Enable Sigma rule format instead of original YAML rules"
                                         TabIndex="10"/>
-                            <TextBlock Style="{DynamicResource MaterialDesignButtonTextBlock}" Text=":Use SIGMA rules (default is use original YAML rule)" VerticalAlignment="Center" Margin="5"/>
+                            <TextBlock Style="{DynamicResource MaterialDesignButtonTextBlock}" Text="Use Sigma rules (default is use original YAML rule)" VerticalAlignment="Center" Margin="5"/>
                         </StackPanel>
                         <Separator Style="{DynamicResource MaterialDesignDarkSeparator}" Grid.Row="3"/>
                         <StackPanel Orientation="Horizontal" Grid.Row="4" HorizontalAlignment="Left" Margin="0,0,0,10">
@@ -150,11 +183,12 @@
                                         AutomationProperties.Name="Use YARA Scanning Toggle"
                                         AutomationProperties.HelpText="Enable YARA memory scanning with configurable interval"
                                         TabIndex="11"/>
-                            <TextBlock Style="{DynamicResource MaterialDesignButtonTextBlock}" Text=":Use YARA scanning on memory (default scan interval is 1 hour)" VerticalAlignment="Center" Margin="5"/>
-                            <TextBox Style="{DynamicResource MaterialDesignTextBox}" x:Name="txtMemoryScanInterval" Text="1" Width="100" VerticalAlignment="Center" Margin="5"
+                            <TextBlock Style="{DynamicResource MaterialDesignButtonTextBlock}" Text="Use YARA scanning on memory: scan interval" VerticalAlignment="Center" Margin="5"/>
+                            <TextBox Style="{DynamicResource MaterialDesignTextBox}" x:Name="txtMemoryScanInterval" Text="1" Width="20" VerticalAlignment="Center" Margin="5"
                                    AutomationProperties.Name="Memory Scan Interval"
                                    AutomationProperties.HelpText="Scan interval in hours for YARA memory scanning"
                                    TabIndex="12"/>
+                            <TextBlock Style="{DynamicResource MaterialDesignButtonTextBlock}" Text="hour (default scan interval is 1 hour)" VerticalAlignment="Center" Margin="5"/>
                         </StackPanel>
                         <Separator Style="{DynamicResource MaterialDesignDarkSeparator}" Grid.Row="5"/>
                         <StackPanel Orientation="Horizontal" Grid.Row="6" HorizontalAlignment="Left" Margin="0,0,0,10">
@@ -162,7 +196,7 @@
                                         AutomationProperties.Name="Event Log Toggle"
                                         AutomationProperties.HelpText="Enable logging alerts to Windows Event Log"
                                         TabIndex="13"/>
-                            <TextBlock Style="{DynamicResource MaterialDesignButtonTextBlock}" Text=":Log to the event log" VerticalAlignment="Center" Margin="5"/>
+                            <TextBlock Style="{DynamicResource MaterialDesignButtonTextBlock}" Text="Log to the event log" VerticalAlignment="Center" Margin="5"/>
                         </StackPanel>
                         <Separator Style="{DynamicResource MaterialDesignDarkSeparator}" Grid.Row="7"/>
                         <StackPanel Orientation="Horizontal" Grid.Row="8" HorizontalAlignment="Left" Margin="0,0,0,10">
@@ -170,7 +204,7 @@
                                         AutomationProperties.Name="Text Log Toggle"
                                         AutomationProperties.HelpText="Enable logging alerts to text files"
                                         TabIndex="14"/>
-                            <TextBlock Style="{DynamicResource MaterialDesignButtonTextBlock}" Text=":Log to the text file" VerticalAlignment="Center" Margin="5"/>
+                            <TextBlock Style="{DynamicResource MaterialDesignButtonTextBlock}" Text="Log to the text file: Folder name" VerticalAlignment="Center" Margin="5"/>
                             <TextBox Style="{DynamicResource MaterialDesignTextBox}" x:Name="txtLogFolder" Width="300" Text="logs" VerticalAlignment="Center" Margin="5"
                                    AutomationProperties.Name="Log Folder Path"
                                    AutomationProperties.HelpText="Directory path for storing log files"
@@ -196,9 +230,15 @@
                 </TabItem>
 
                 <!-- Help Tab -->
-                <TabItem Header="{materialDesign:PackIcon Kind=Help, Size=25}" x:Name="helpTabItem"
+                <TabItem x:Name="helpTabItem"
                          AutomationProperties.Name="Help Tab"
                          AutomationProperties.HelpText="Application documentation and usage instructions">
+                    <TabItem.Header>
+                        <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                            <materialDesign:PackIcon Kind="Help" Width="25" Height="25" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Help" FontSize="12" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </TabItem.Header>
                     <Grid Margin="10">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*"/>
@@ -211,8 +251,8 @@
                                         AutomationProperties.Name="Application Overview Section">
                                     <TextBlock TextWrapping="Wrap" Margin="8"
                                              AutomationProperties.Name="Overview Description">
-                                        YAMAGoya is a tool that uses ETW sessions to detect malicious processes.
-                                        It monitors suspicious activities on the system in real-time using YAML rules, SIGMA rules, and YARA rules.
+                                        YAMAGoya is a comprehensive security monitoring tool that uses ETW (Event Tracing for Windows) sessions to detect malicious processes and suspicious activities.
+                                        It supports multiple detection methods including original YAML rules, Sigma rules, and YARA rules for real-time threat detection.
                                     </TextBlock>
                                 </GroupBox>
 
@@ -221,29 +261,32 @@
                                     <StackPanel Margin="8">
                                         <TextBlock TextWrapping="Wrap" Margin="0,0,0,5"
                                                  AutomationProperties.Name="Rules Folder Help">
-                                            <Bold>Rules Folder</Bold>: Specify the folder containing rule files used for detection.
+                                            <Bold>Rules Folder</Bold>: Specify the folder containing rule files used for detection. 
+                                            Supports YAML rules (default), Sigma rules, and YARA rules depending on your configuration.
                                         </TextBlock>
                                         <TextBlock TextWrapping="Wrap" Margin="0,0,0,5"
                                                  AutomationProperties.Name="Start Detection Help">
-                                            <Bold>Start Detection</Bold>: Start an ETW session and begin monitoring using the specified rules.
+                                            <Bold>Start Detection</Bold>: Starts an ETW session and begins real-time monitoring using the specified rules.
+                                            The application will analyze system events and generate alerts based on configured detection criteria.
                                         </TextBlock>
                                         <TextBlock TextWrapping="Wrap"
                                                  AutomationProperties.Name="Stop Detection Help">
-                                            <Bold>Stop Detection</Bold>: Stop the running detection process.
+                                            <Bold>Stop Detection</Bold>: Stops the running detection process and terminates the ETW session.
                                         </TextBlock>
                                     </StackPanel>
                                 </GroupBox>
 
-                                <GroupBox Header="Alert Monitoring Tab" Margin="0,0,0,10"
-                                        AutomationProperties.Name="Alert Monitoring Help Section">
+                                <GroupBox Header="Alert Tab" Margin="0,0,0,10"
+                                        AutomationProperties.Name="Alert Tab Help Section">
                                     <StackPanel Margin="8">
                                         <TextBlock TextWrapping="Wrap" Margin="0,0,0,5"
                                                  AutomationProperties.Name="Alert Display Help">
-                                            Displays a list of detected alerts. Each alert includes a timestamp and message.
+                                            Displays a real-time list of detected security alerts. Each alert includes a timestamp and detailed message.
+                                            Double-click on any alert to view full details. Right-click to copy alert information to clipboard.
                                         </TextBlock>
                                         <TextBlock TextWrapping="Wrap"
                                                  AutomationProperties.Name="Open Log File Help">
-                                            <Bold>Open Log File</Bold>: Open the current log file in the default text editor.
+                                            <Bold>Open Log File</Bold>: Opens the current or most recent log file in your default text editor for detailed analysis.
                                         </TextBlock>
                                     </StackPanel>
                                 </GroupBox>
@@ -253,27 +296,32 @@
                                     <StackPanel Margin="8">
                                         <TextBlock TextWrapping="Wrap" Margin="0,0,0,5"
                                                  AutomationProperties.Name="Process Termination Help">
-                                            <Bold>Process Termination Mode</Bold>: Automatically terminate detected malicious processes.
+                                            <Bold>Kill Process Mode</Bold>: When enabled, automatically terminates detected malicious processes.
+                                            Use with extreme caution as legitimate processes may be terminated incorrectly.
                                         </TextBlock>
                                         <TextBlock TextWrapping="Wrap" Margin="0,0,0,5"
-                                                 AutomationProperties.Name="Use SIGMA Rules Help">
-                                            <Bold>Use SIGMA Rules</Bold>: Use SIGMA rules instead of original YAML rules.
+                                                 AutomationProperties.Name="Use Sigma Rules Help">
+                                            <Bold>Use Sigma Rules</Bold>: Switch from original YAML rules to Sigma rule format.
+                                            Sigma is a generic and open signature format for SIEM systems.
                                         </TextBlock>
                                         <TextBlock TextWrapping="Wrap" Margin="0,0,0,5"
                                                  AutomationProperties.Name="Use YARA Scanning Help">
-                                            <Bold>Use YARA Scanning</Bold>: Enable YARA scanning on memory. You can set the scan interval in hours.
+                                            <Bold>Use YARA Scanning</Bold>: Enables periodic memory scanning using YARA rules.
+                                            Scan interval can be set between 1-24 hours. Memory scanning detects malware patterns in running processes.
                                         </TextBlock>
                                         <TextBlock TextWrapping="Wrap" Margin="0,0,0,5"
                                                  AutomationProperties.Name="Event Log Help">
-                                            <Bold>Log to Event Log</Bold>: Record alerts in the Windows event log.
+                                            <Bold>Log to Event Log</Bold>: Records detection alerts in the Windows Event Log for integration with enterprise monitoring systems.
                                         </TextBlock>
                                         <TextBlock TextWrapping="Wrap" Margin="0,0,0,5"
                                                  AutomationProperties.Name="Text Log Help">
-                                            <Bold>Log to Text File</Bold>: Create log files in the specified folder.
+                                            <Bold>Log to Text File</Bold>: Creates timestamped log files in the specified folder.
+                                            Files are organized by date for easy archival and analysis.
                                         </TextBlock>
                                         <TextBlock TextWrapping="Wrap"
                                                  AutomationProperties.Name="Custom ETW Session Name Help">
-                                            <Bold>Custom ETW Session Name</Bold>: Specify a custom name for the ETW session.
+                                            <Bold>Custom ETW Session Name</Bold>: Specify a custom name for the ETW session (alphanumeric, hyphens, underscores only, max 20 characters).
+                                            Useful when running multiple instances or integrating with other ETW tools.
                                         </TextBlock>
                                     </StackPanel>
                                 </GroupBox>
@@ -283,26 +331,34 @@
                                     <StackPanel Margin="8">
                                         <TextBlock TextWrapping="Wrap"
                                                  AutomationProperties.Name="System Tray Description">
-                                            The window is stored in the system tray when minimized. Double-click the tray icon to display the application again.
-                                            You can also open or exit the application from the right-click menu.
+                                            The application minimizes to the system tray instead of closing completely. 
+                                            Double-click the tray icon to restore the window, or right-click for context menu options.
                                         </TextBlock>
                                     </StackPanel>
                                 </GroupBox>
 
-                                <GroupBox Header="Notes" Margin="0,0,0,10"
+                                <GroupBox Header="Important Notes" Margin="0,0,0,10"
                                         AutomationProperties.Name="Important Notes Section">
                                     <StackPanel Margin="8">
                                         <TextBlock TextWrapping="Wrap" Margin="0,0,0,5"
                                                  AutomationProperties.Name="Admin Privileges Note">
-                                            • This application needs to be run with <Bold>administrator privileges</Bold>.
+                                            • This application <Bold>must be run with administrator privileges</Bold> to access ETW sessions.
                                         </TextBlock>
                                         <TextBlock TextWrapping="Wrap" Margin="0,0,0,5"
                                                  AutomationProperties.Name="Detection Accuracy Note">
-                                            • The accuracy of detection depends on the quality of the rules.
+                                            • Detection accuracy depends on the quality and coverage of your rule sets.
+                                        </TextBlock>
+                                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,5"
+                                                 AutomationProperties.Name="Process Termination Caution">
+                                            • Use process termination mode with <Bold>extreme caution</Bold>. Legitimate system processes may be terminated incorrectly.
+                                        </TextBlock>
+                                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,5"
+                                                 AutomationProperties.Name="Memory Scan Performance Note">
+                                            • YARA memory scanning may impact system performance. Adjust scan intervals based on your system capacity.
                                         </TextBlock>
                                         <TextBlock TextWrapping="Wrap"
-                                                 AutomationProperties.Name="Process Termination Caution">
-                                            • Please use process termination mode with caution. Normal processes may be terminated by mistake.
+                                                 AutomationProperties.Name="Input Validation Note">
+                                            • All file paths and session names are validated for security. Invalid characters or directory traversal attempts will be blocked.
                                         </TextBlock>
                                     </StackPanel>
                                 </GroupBox>

@@ -12,9 +12,10 @@ using System.Diagnostics.CodeAnalysis;
 using System.Windows.Navigation;
 using System.Windows.Automation.Peers;
 using System.Windows.Automation;
+using System.Linq;
+using System.Text.RegularExpressions;
 using YAMAGoya.Core;
 using MessageBox = System.Windows.MessageBox;
-using System.Windows.Interop;
 
 namespace YAMAGoya
 {
@@ -223,31 +224,43 @@ namespace YAMAGoya
         /// Appends a status message with a timestamp to the alert monitoring ListBox.
         /// Enhanced with accessibility announcements.
         /// </summary>
-        /// <param name="message">The status message to append.</param>
-        public void AppendAlert(string message)
+        /// <param name="noSanitizeLogMessage">The status message to append.</param>
+        public void AppendAlert(string noSanitizeLogMessage)
         {
             // Validate input parameter
-            ArgumentNullException.ThrowIfNull(message);
+            ArgumentNullException.ThrowIfNull(noSanitizeLogMessage);
 
             // If we're not on the UI thread, re-invoke this method on the UI thread.
             if (!this.Dispatcher.CheckAccess())
             {
-                this.Dispatcher.Invoke(() => AppendAlert(message));
+                this.Dispatcher.Invoke(() => AppendAlert(noSanitizeLogMessage));
                 return;
             }
 
             // Format the timestamp using invariant culture.
-            string timeStamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+            DateTime now = DateTime.Now;
+            string timeStamp = now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+            string message = SanitizeLogMessage(noSanitizeLogMessage);
             string fullMessage = $"{timeStamp}: {message}";
-            
-            // Create alert item with appropriate color
+
+            // Create alert item with appropriate color and parsed information
             var alertItem = new AlertItem
             {
-                Message = fullMessage,
+                FullMessage = fullMessage,
+                Message = fullMessage, // For backward compatibility
+                ShortMessage = TruncateMessage(message, 80), // Show first 80 characters
+                Timestamp = timeStamp,
+                OriginalMessage = message,
                 Foreground = message.Contains("DETECTED", StringComparison.Ordinal) ? System.Windows.Media.Brushes.Red : System.Windows.Media.Brushes.Black
             };
             
             lstAlerts.Items.Add(alertItem);
+            
+            // Auto-scroll to the latest item
+            if (lstAlerts.Items.Count > 0)
+            {
+                lstAlerts.ScrollIntoView(lstAlerts.Items[lstAlerts.Items.Count - 1]);
+            }
             
             // Announce important alerts to screen readers
             if (message.Contains("started", StringComparison.OrdinalIgnoreCase) || 
@@ -261,6 +274,221 @@ namespace YAMAGoya
                     peer.RaiseAutomationEvent(AutomationEvents.LiveRegionChanged);
                 }
             }
+        }
+
+        /// <summary>
+        /// Truncates a message to the specified length and adds ellipsis if needed.
+        /// </summary>
+        /// <param name="message">The message to truncate.</param>
+        /// <param name="maxLength">The maximum length of the truncated message.</param>
+        /// <returns>The truncated message.</returns>
+        private static string TruncateMessage(string message, int maxLength)
+        {
+            if (string.IsNullOrEmpty(message) || message.Length <= maxLength)
+            {
+                return message;
+            }
+            
+            return string.Concat(message.AsSpan(0, maxLength), "...");
+        }
+
+        /// <summary>
+        /// Validates and sanitizes file/folder paths to prevent directory traversal attacks
+        /// </summary>
+        /// <param name="path">The path to validate</param>
+        /// <param name="mustExist">Whether the path must exist</param>
+        /// <returns>The validated and sanitized full path</returns>
+        /// <exception cref="ArgumentException">Thrown when path is invalid</exception>
+        private static string ValidateAndSanitizePath(string path, bool mustExist = true)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                throw new ArgumentException("Path cannot be null, empty, or whitespace.");
+            }
+
+            // Remove any potential directory traversal sequences with explicit StringComparison
+            string sanitizedPath = path;
+            while (sanitizedPath.Contains("../", StringComparison.Ordinal) || 
+                   sanitizedPath.Contains("..\\", StringComparison.Ordinal))
+            {
+                sanitizedPath = sanitizedPath.Replace("../", "", StringComparison.Ordinal)
+                                              .Replace("..\\", "", StringComparison.Ordinal);
+            }
+
+            try
+            {
+                // Get the full path to resolve any relative paths
+                string fullPath = Path.GetFullPath(sanitizedPath);
+                
+                // Ensure the path doesn't contain any remaining traversal attempts
+                if (fullPath.Contains("..", StringComparison.Ordinal))
+                {
+                    throw new ArgumentException("Path contains invalid directory traversal sequences.");
+                }
+
+                // Check if path exists when required
+                if (mustExist && !Directory.Exists(fullPath) && !File.Exists(fullPath))
+                {
+                    throw new ArgumentException($"The specified path does not exist: {fullPath}");
+                }
+
+                return fullPath;
+            }
+            catch (Exception ex) when (!(ex is ArgumentException))
+            {
+                throw new ArgumentException($"Invalid path format: {path}", ex);
+            }
+        }
+
+        /// <summary>
+        /// Validates and sanitizes session name to prevent injection attacks
+        /// </summary>
+        /// <param name="sessionName">The session name to validate</param>
+        /// <returns>The validated session name</returns>
+        /// <exception cref="ArgumentException">Thrown when session name is invalid</exception>
+        private static string ValidateSessionName(string sessionName)
+        {
+            if (string.IsNullOrWhiteSpace(sessionName))
+            {
+                throw new ArgumentException("Session name cannot be null, empty, or whitespace.");
+            }
+
+            // Session name should only contain alphanumeric characters, hyphens, and underscores
+            if (!System.Text.RegularExpressions.Regex.IsMatch(sessionName, @"^[a-zA-Z0-9_-]+$"))
+            {
+                throw new ArgumentException("Session name can only contain alphanumeric characters, hyphens, and underscores.");
+            }
+
+            if (sessionName.Length > 20)
+            {
+                throw new ArgumentException("Session name cannot exceed 20 characters.");
+            }
+
+            return sessionName;
+        }
+
+        /// <summary>
+        /// Validates integer input within specified range
+        /// </summary>
+        /// <param name="input">The input string to validate</param>
+        /// <param name="parameterName">The name of the parameter for error messages</param>
+        /// <param name="minValue">The minimum allowed value</param>
+        /// <param name="maxValue">The maximum allowed value</param>
+        /// <returns>The validated integer value</returns>
+        /// <exception cref="ArgumentException">Thrown when input is invalid</exception>
+        private static int ValidateIntegerInput(string input, string parameterName, int minValue = 1, int maxValue = int.MaxValue)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+            {
+                throw new ArgumentException($"{parameterName} cannot be null, empty, or whitespace.");
+            }
+
+            if (!int.TryParse(input, out int value))
+            {
+                throw new ArgumentException($"{parameterName} must be a valid integer.");
+            }
+
+            if (value < minValue || value > maxValue)
+            {
+                throw new ArgumentException($"{parameterName} must be between {minValue} and {maxValue}.");
+            }
+
+            return value;
+        }
+
+        /// <summary>
+        /// Handles the selection change event for the alerts ListBox.
+        /// </summary>
+        private void LstAlerts_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            // Optional: Could add logic here if needed for selection handling
+        }
+
+        /// <summary>
+        /// Handles the double-click event for the alerts ListBox to show detailed information.
+        /// </summary>
+        private void LstAlerts_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (lstAlerts.SelectedItem is AlertItem selectedAlert)
+            {
+                ShowAlertDetails(selectedAlert);
+            }
+        }
+
+        /// <summary>
+        /// Handles the context menu click to copy log message to clipboard.
+        /// </summary>
+        private void CopyLogMessage_Click(object sender, RoutedEventArgs e)
+        {
+            if (lstAlerts.SelectedItem is AlertItem selectedAlert)
+            {
+                try
+                {
+                    System.Windows.Clipboard.SetText(selectedAlert.OriginalMessage);
+                    // Optional: Show a brief notification that the text was copied
+                }
+                catch (System.Runtime.InteropServices.ExternalException ex)
+                {
+                    MessageBox.Show($"Failed to copy to clipboard: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Handles the context menu click to copy full log details to clipboard.
+        /// </summary>
+        private void CopyFullDetails_Click(object sender, RoutedEventArgs e)
+        {
+            if (lstAlerts.SelectedItem is AlertItem selectedAlert)
+            {
+                try
+                {
+                    string fullDetails = ParseAlertDetails(selectedAlert.OriginalMessage, selectedAlert.Timestamp);
+                    System.Windows.Clipboard.SetText(fullDetails);
+                    // Optional: Show a brief notification that the text was copied
+                }
+                catch (System.Runtime.InteropServices.ExternalException ex)
+                {
+                    MessageBox.Show($"Failed to copy to clipboard: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Shows detailed information about the selected alert in a dialog.
+        /// </summary>
+        /// <param name="alert">The alert item to show details for.</param>
+        private static void ShowAlertDetails(AlertItem alert)
+        {
+            string detailsText = ParseAlertDetails(alert.OriginalMessage, alert.Timestamp);
+            
+            // Determine the appropriate icon based on message content
+            MessageBoxImage iconType = alert.OriginalMessage.Contains("DETECTED", StringComparison.Ordinal) 
+                ? MessageBoxImage.Warning 
+                : MessageBoxImage.Information;
+            
+            MessageBox.Show(
+                detailsText,
+                "Alert Details",
+                MessageBoxButton.OK,
+                iconType
+            );
+        }
+
+        /// <summary>
+        /// Parses the alert message to extract meaningful information.
+        /// </summary>
+        /// <param name="message">The original alert message.</param>
+        /// <param name="timestamp">The timestamp of the alert.</param>
+        /// <returns>A formatted string with detailed information.</returns>
+        private static string ParseAlertDetails(string message, string timestamp)
+        {
+            var details = new System.Text.StringBuilder();
+            details.AppendLine(CultureInfo.InvariantCulture, $"Timestamp: {timestamp}");
+            details.AppendLine(CultureInfo.InvariantCulture, $"Details: {message}");
+            details.AppendLine();
+            
+            return details.ToString();
         }
 
         /// <summary>
@@ -332,7 +560,15 @@ namespace YAMAGoya
             {
                 if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                 {
-                    txtRulesFolder.Text = dialog.SelectedPath;
+                    try
+                    {
+                        string validatedPath = ValidateAndSanitizePath(dialog.SelectedPath, true);
+                        txtRulesFolder.Text = validatedPath;
+                    }
+                    catch (ArgumentException ex)
+                    {
+                        MessageBox.Show($"Invalid folder path selected: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
                 }
             }
         }
@@ -346,7 +582,15 @@ namespace YAMAGoya
             {
                 if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                 {
-                    txtLogFolder.Text = dialog.SelectedPath;
+                    try
+                    {
+                        string validatedPath = ValidateAndSanitizePath(dialog.SelectedPath, false);
+                        txtLogFolder.Text = validatedPath;
+                    }
+                    catch (ArgumentException ex)
+                    {
+                        MessageBox.Show($"Invalid folder path selected: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
                 }
             }
         }
@@ -370,26 +614,47 @@ namespace YAMAGoya
                 return;
             }
 
+            // Validate and sanitize the rules folder path
+            try
+            {
+                folder = ValidateAndSanitizePath(folder, true);
+            }
+            catch (ArgumentException ex)
+            {
+                MessageBox.Show($"Invalid rules folder path: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
             if (sessionNameOption)
             {
-                Dispatcher.Invoke(() => {
-                    Config.sessionName = txtSessionName.Text;
-                });
+                try
+                {
+                    string sessionName = ValidateSessionName(txtSessionName.Text);
+                    Dispatcher.Invoke(() => {
+                        Config.sessionName = sessionName;
+                    });
+                }
+                catch (ArgumentException ex)
+                {
+                    MessageBox.Show($"Invalid session name: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
             }
 
             if (yaraOption)
             {
-                Dispatcher.Invoke(() => {
-                    if (int.TryParse(txtMemoryScanInterval.Text, out int interval))
-                    {
+                try
+                {
+                    int interval = ValidateIntegerInput(txtMemoryScanInterval.Text, "Memory scan interval", 1, 24);
+                    Dispatcher.Invoke(() => {
                         Config.memoryScanInterval = interval;
-                    }
-                    else
-                    {
-                        MessageBox.Show("Invalid memory scan interval. Please enter a valid number.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
-                        return;
-                    }
-                });
+                    });
+                }
+                catch (ArgumentException ex)
+                {
+                    MessageBox.Show($"Invalid memory scan interval: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
             }
 
             try
@@ -475,7 +740,23 @@ namespace YAMAGoya
                             }
 
                             Dispatcher.Invoke(() => {
-                                Config.logDirectory = txtLogFolder.Text;
+                                string logPath = txtLogFolder.Text;
+                                if (!string.IsNullOrWhiteSpace(logPath))
+                                {
+                                    try
+                                    {
+                                        Config.logDirectory = ValidateAndSanitizePath(logPath, false);
+                                    }
+                                    catch (ArgumentException ex)
+                                    {
+                                        MessageBox.Show($"Invalid log folder path: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                                        return;
+                                    }
+                                }
+                                else
+                                {
+                                    Config.logDirectory = txtLogFolder.Text;
+                                }
                             });
                             detect.StartEtwDetection(folder, options.ToArray(), Config.sessionName, token);
                         }
@@ -759,7 +1040,27 @@ namespace YAMAGoya
         internal sealed class AlertItem
         {
             /// <summary>
-            /// Gets or sets the alert message text.
+            /// Gets or sets the full alert message text with timestamp.
+            /// </summary>
+            public string FullMessage { get; set; } = string.Empty;
+
+            /// <summary>
+            /// Gets or sets the truncated alert message for display in the list.
+            /// </summary>
+            public string ShortMessage { get; set; } = string.Empty;
+
+            /// <summary>
+            /// Gets or sets the timestamp of the alert.
+            /// </summary>
+            public string Timestamp { get; set; } = string.Empty;
+
+            /// <summary>
+            /// Gets or sets the original message without timestamp.
+            /// </summary>
+            public string OriginalMessage { get; set; } = string.Empty;
+            
+            /// <summary>
+            /// Gets or sets the alert message text (for backward compatibility).
             /// </summary>
             public string Message { get; set; } = string.Empty;
             
@@ -772,6 +1073,20 @@ namespace YAMAGoya
             /// Gets the display text for the alert item.
             /// </summary>
             public string DisplayText => Message;
+        }
+
+        /// <summary>
+        /// Sanitizes log message by removing control characters and excessive whitespace.
+        /// </summary>
+        private static string SanitizeLogMessage(string message)
+        {
+            if (string.IsNullOrEmpty(message))
+                return string.Empty;
+
+            string sanitized = Regex.Replace(message, @"[\r\n\t\x00-\x1F\x7F]", " ");
+            sanitized = Regex.Replace(sanitized, @"\s+", " ");
+
+            return sanitized.Trim();
         }
     }
 }

@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Timers;
@@ -27,7 +26,6 @@ namespace YAMAGoya.Core
                         continue;
                     }
                     
-                    // CA1307対応: StringComparisonを使用
                     if (!fileContent.Contains("rule ", StringComparison.Ordinal))
                     {
                         Console.WriteLine($"[ERROR] File may not contain valid YARA rules: {file}");

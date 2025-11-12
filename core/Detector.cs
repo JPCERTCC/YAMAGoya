@@ -14,7 +14,6 @@ using System.Text.RegularExpressions;
 using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
-using WpfApp = System.Windows.Application;
 using System.Threading;
 
 namespace YAMAGoya.Core
@@ -22,7 +21,7 @@ namespace YAMAGoya.Core
     /// <summary>
     /// Detection class that reads rule files and performs ETW event detection.
     /// Default mode loads YAML rule files (Rule objects).
-    /// If the "--sigma" option is specified, SIGMA rule files (SigmaRule objects) are loaded and evaluated.
+    /// If the "--sigma" option is specified, Sigma rule files (SigmaRule objects) are loaded and evaluated.
     /// </summary>
     [SupportedOSPlatform("windows")]
     internal sealed class Detect : IDisposable
@@ -100,6 +99,119 @@ namespace YAMAGoya.Core
                 (byte)((address >> 16) & 0xFF),
                 (byte)((address >> 24) & 0xFF)
             });
+        }
+
+        /// <summary>
+        /// Extracts a Unicode string from EventData starting at the specified offset.
+        /// Returns the extracted string and the new offset after the string.
+        /// </summary>
+        /// <param name="eventData">The event data byte array</param>
+        /// <param name="startOffset">The starting offset in the byte array</param>
+        /// <returns>A tuple containing the extracted string and the new offset</returns>
+        private static (string extractedString, int newOffset) ExtractUnicodeStringFromEventData(byte[] eventData, int startOffset)
+        {
+            if (eventData == null || startOffset >= eventData.Length || startOffset < 0)
+            {
+                return (string.Empty, startOffset);
+            }
+
+            var stringBytes = new List<byte>();
+            int offset = startOffset;
+
+            // Read Unicode characters (2 bytes each) until we find null terminator (00 00)
+            while (offset + 1 < eventData.Length)
+            {
+                byte lowByte = eventData[offset];
+                byte highByte = eventData[offset + 1];
+
+                // Check for null terminator (00 00)
+                if (lowByte == 0 && highByte == 0)
+                {
+                    offset += 2; // Skip the null terminator
+                    break;
+                }
+
+                stringBytes.Add(lowByte);
+                stringBytes.Add(highByte);
+                offset += 2;
+            }
+
+            if (stringBytes.Count > 0)
+            {
+                try
+                {
+                    string result = Encoding.Unicode.GetString(stringBytes.ToArray());
+                    return (result, offset);
+                }
+                catch (DecoderFallbackException ex)
+                {
+                    if (Config.logLevel == Config.LogLevel.Debug)
+                        Console.WriteLine($"[VERBOSE] Failed to decode Unicode string: {ex.Message}");
+                    return (string.Empty, offset);
+                }
+                catch (ArgumentException ex)
+                {
+                    if (Config.logLevel == Config.LogLevel.Debug)
+                        Console.WriteLine($"[VERBOSE] Failed to decode Unicode string: {ex.Message}");
+                    return (string.Empty, offset);
+                }
+            }
+
+            return (string.Empty, offset);
+        }
+
+        /// <summary>
+        /// Extracts the ImageName from Microsoft-Windows-Kernel-Process EventData.
+        /// The ImageName is typically located after the initial fixed-size fields.
+        /// </summary>
+        /// <param name="eventData">The event data byte array</param>
+        /// <returns>The extracted ImageName or empty string if not found</returns>
+        private static string ExtractImageNameFromProcessEventData(byte[] eventData)
+        {
+            if (eventData == null || eventData.Length < 64)
+            {
+                return string.Empty;
+            }
+
+            try
+            {
+                // Based on the hex dump, the Unicode string starts around offset 64 (0x40)
+                // Look for the pattern that indicates the start of the path
+                // The structure appears to have fixed fields followed by the ImageName
+                
+                int searchStart = 60; // Start searching a bit before offset 64
+                
+                // Look for Unicode string pattern (non-zero byte followed by zero byte, indicating Unicode)
+                for (int i = searchStart; i < eventData.Length - 10; i += 2)
+                {
+                    // Check if this looks like the start of a Unicode path string
+                    if (eventData[i] == 0x5C && eventData[i + 1] == 0x00) // '\' character in Unicode
+                    {
+                        // Found potential start of path, extract the Unicode string
+                        var (imageName, _) = ExtractUnicodeStringFromEventData(eventData, i);
+                        if (!string.IsNullOrEmpty(imageName) && imageName.Contains('\\', StringComparison.Ordinal))
+                        {
+                            return imageName;
+                        }
+                    }
+                }
+
+                // Fallback: try extracting from common offset 64
+                var (fallbackImageName, _) = ExtractUnicodeStringFromEventData(eventData, 64);
+                return fallbackImageName;
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                if (Config.logLevel == Config.LogLevel.Debug)
+                    Console.WriteLine($"[VERBOSE] Failed to extract ImageName from EventData: {ex.Message}");
+                return string.Empty;
+            }
+            catch (IndexOutOfRangeException ex)
+            {
+                if (Config.logLevel == Config.LogLevel.Debug)
+                    Console.WriteLine($"[VERBOSE] Failed to extract ImageName from EventData: {ex.Message}");
+                return string.Empty;
+            }
         }
 
         /// <summary>
@@ -229,7 +341,7 @@ namespace YAMAGoya.Core
         /// <summary>
         /// Starts a real-time ETW session, loads rule files, and triggers detection.
         /// Default mode loads YAML rule files (Rule objects).
-        /// If the "--sigma" option is specified, SIGMA rule files (SigmaRule objects) are loaded and evaluated.
+        /// If the "--sigma" option is specified, Sigma rule files (SigmaRule objects) are loaded and evaluated.
         /// Verbose logs are output if --verbose is specified.
         /// Also sets up a Timer (in default mode) to reset rules if no new events arrive.
         /// </summary>
@@ -254,9 +366,9 @@ namespace YAMAGoya.Core
             // Load rule files based on mode.
             if (args.Contains("--sigma") || args.Contains("-si"))
             {
-                Console.WriteLine("[INFO] Loading SIGMA rule files...");
+                Console.WriteLine("[INFO] Loading Sigma rule files...");
                 _sigmaRules = SigmaDetector.LoadSigmaRules(folder);
-                Console.WriteLine($"[INFO] Loaded SIGMA rule count: {_sigmaRules.Count}");
+                Console.WriteLine($"[INFO] Loaded Sigma rule count: {_sigmaRules.Count}");
             }
             else if (args.Contains("--detect") || args.Contains("-d"))
             {
@@ -287,7 +399,7 @@ namespace YAMAGoya.Core
                 _fileWatcher.Created += ReloadSigmaRules;
                 _fileWatcher.Changed += ReloadSigmaRules;
                 if (Config.logLevel == Config.LogLevel.Debug)
-                    Console.WriteLine("[VERBOSE] FileSystemWatcher set up for SIGMA rule files (*.yml)");
+                    Console.WriteLine("[VERBOSE] FileSystemWatcher set up for Sigma rule files (*.yml)");
             }
             else if (args.Contains("--detect") || args.Contains("-d"))
             {
@@ -334,7 +446,7 @@ namespace YAMAGoya.Core
                 {
                     DateTime now = DateTime.Now;
 
-                    // SIGMA rule detection branch
+                    // Sigma rule detection branch
                     if ((args.Contains("--sigma") || args.Contains("-si")) && _sigmaRules is not null && _sigmaRules?.Count > 0)
                     {
                         // Use static methods from SigmaDetector.
@@ -342,8 +454,8 @@ namespace YAMAGoya.Core
                         {
                             if (SigmaDetector.EvaluateSigmaDetection(data, sigma))
                             {
-                                DualLogger.WriteDetectedMessage($"[INFO] {now} DETECTED (SIGMA): {sigma.Title} - {sigma.Description}");
-                                Logger.Log($"DETECTED (SIGMA): {sigma.Title} - {sigma.Description}", Config.LogLevel.Info, 9001);
+                                DualLogger.WriteDetectedMessage($"[INFO] {now} DETECTED (Sigma): {sigma.Title} - {sigma.Description}");
+                                Logger.Log($"DETECTED (Sigma): {sigma.Title} - {sigma.Description}", Config.LogLevel.Info, 9001);
                                 if (args.Contains("--kill") || args.Contains("-k"))
                                 {
                                     int pid = data.ProcessID;
@@ -608,7 +720,7 @@ namespace YAMAGoya.Core
         }
 
         /// <summary>
-        /// Reloads SIGMA rules when changes are detected in the rules directory
+        /// Reloads Sigma rules when changes are detected in the rules directory
         /// </summary>
         /// <param name="sender">Event sender object</param>
         /// <param name="e">Event arguments</param>
@@ -625,29 +737,29 @@ namespace YAMAGoya.Core
                 string folder = Path.GetDirectoryName(e.FullPath) ?? "";
                 
                 if (Config.logLevel == Config.LogLevel.Debug)
-                    Console.WriteLine($"[VERBOSE] {DateTime.Now} Rule file change detected. Reloading SIGMA rules...");
+                    Console.WriteLine($"[VERBOSE] {DateTime.Now} Rule file change detected. Reloading Sigma rules...");
                 
                 var newRules = SigmaDetector.LoadSigmaRules(folder);
                 
                 // Replace rules with the new set
                 _sigmaRules = newRules;
                 
-                Console.WriteLine($"[INFO] {DateTime.Now} Successfully reloaded {_sigmaRules.Count} SIGMA rules.");
+                Console.WriteLine($"[INFO] {DateTime.Now} Successfully reloaded {_sigmaRules.Count} Sigma rules.");
                 
                 // Update last reload time
                 _lastSigmaRulesReload = DateTime.UtcNow;
             }
             catch (IOException ex)
             {
-                Console.WriteLine($"[ERROR] {DateTime.Now} Failed to reload SIGMA rules (IO error): {ex.Message}");
+                Console.WriteLine($"[ERROR] {DateTime.Now} Failed to reload Sigma rules (IO error): {ex.Message}");
             }
             catch (YamlException ex)
             {
-                Console.WriteLine($"[ERROR] {DateTime.Now} Failed to reload SIGMA rules (YAML error): {ex.Message}");
+                Console.WriteLine($"[ERROR] {DateTime.Now} Failed to reload Sigma rules (YAML error): {ex.Message}");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[ERROR] {DateTime.Now} Failed to reload SIGMA rules: {ex.Message}");
+                Console.WriteLine($"[ERROR] {DateTime.Now} Failed to reload Sigma rules: {ex.Message}");
                 throw;
             }
         }
@@ -791,6 +903,18 @@ namespace YAMAGoya.Core
                         // Try multiple possible field names for the image name
                         string imageName = data.PayloadStringByName("ImageName", null) ?? ""; // For some reason ImageName becomes null
                         int ProcessID = (int)data.PayloadByName("ProcessID");
+                        
+                        // If PayloadStringByName didn't work, try extracting from EventData directly
+                        if (string.IsNullOrEmpty(imageName))
+                        {
+                            byte[] processEventData = data.EventData();
+                            if (processEventData != null && processEventData.Length > 0)
+                            {
+                                imageName = ExtractImageNameFromProcessEventData(processEventData);
+                                if (Config.logLevel == Config.LogLevel.Debug && !string.IsNullOrEmpty(imageName))
+                                    Console.WriteLine($"[VERBOSE] Extracted ImageName from EventData: {imageName}");
+                            }
+                        }
                         
                         // If we still don't have the image name, try to get it from the Process API
                         if (string.IsNullOrEmpty(imageName) && ProcessID > 0)
@@ -1331,9 +1455,9 @@ namespace YAMAGoya.Core
         }
 
         /// <summary>
-        /// Loads SIGMA rule files using SigmaDetector.
+        /// Loads Sigma rule files using SigmaDetector.
         /// </summary>
-        /// <param name="folder">The folder containing SIGMA rule files.</param>
+        /// <param name="folder">The folder containing Sigma rule files.</param>
         /// <returns>A list of SigmaRule objects.</returns>
         private static List<SigmaRule> LoadSigmaRules(string folder)
         {

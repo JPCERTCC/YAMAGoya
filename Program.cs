@@ -43,6 +43,7 @@ namespace YAMAGoya
             "--no_text_log",
             "--no_event_log",
             "--check_interval",
+            "--memory_scan_interval",
             "--log_path",
             "--verbose"
         };
@@ -63,9 +64,9 @@ namespace YAMAGoya
                 throw new ArgumentException("Session name can only contain alphanumeric characters, hyphens, and underscores.");
             }
 
-            if (sessionName.Length > 50)
+            if (sessionName.Length > 20)
             {
-                throw new ArgumentException("Session name cannot exceed 50 characters.");
+                throw new ArgumentException("Session name cannot exceed 20 characters.");
             }
 
             return sessionName;
@@ -82,8 +83,13 @@ namespace YAMAGoya
             }
 
             // Remove any potential directory traversal sequences with explicit StringComparison
-            string sanitizedPath = path.Replace("../", "", StringComparison.Ordinal)
-                                      .Replace("..\\", "", StringComparison.Ordinal);
+            string sanitizedPath = path;
+            while (sanitizedPath.Contains("../", StringComparison.Ordinal) || 
+                   sanitizedPath.Contains("..\\", StringComparison.Ordinal))
+            {
+                sanitizedPath = sanitizedPath.Replace("../", "", StringComparison.Ordinal)
+                                              .Replace("..\\", "", StringComparison.Ordinal);
+            }
             
             try
             {
@@ -179,6 +185,21 @@ namespace YAMAGoya
                 else
                 {
                     throw new ArgumentException("You must specify a valid integer after --check_interval.");
+                }
+            }
+
+            if (args.Contains("--memory_scan_interval"))
+            {
+                int index = Array.IndexOf(args, "--memory_scan_interval");
+                if (index >= 0 && index < args.Length - 1)
+                {
+                    int interval = ValidateIntegerInput(args[index + 1], "Memory scan interval", 1, 24);
+                    Config.memoryScanInterval = interval;
+                    Console.WriteLine($"[INFO] Memory scan interval set to: {Config.memoryScanInterval} hour(s).");
+                }
+                else
+                {
+                    throw new ArgumentException("You must specify a valid integer after --memory_scan_interval.");
                 }
             }
 
@@ -323,7 +344,7 @@ namespace YAMAGoya
             Console.WriteLine("                     [--open|-o]");
             Console.WriteLine("                     [--delfile|-df] [--all|-a] [--kill|-k]");
             Console.WriteLine("                     [--session_name sessionName] [--no_text_log] [--no_event_log]");
-            Console.WriteLine("                     [--check_interval interval] [--log_path path]");
+            Console.WriteLine("                     [--check_interval interval] [--memory_scan_interval interval] [--log_path path]");
             Console.WriteLine("                     [--wmi|-w] [--verbose]");
             Console.WriteLine();
             Console.WriteLine("Example:");
@@ -359,6 +380,7 @@ namespace YAMAGoya
             Console.WriteLine("  --no_text_log                    Disable text log file");
             Console.WriteLine("  --no_event_log                   Disable logging to the Windows Event Log");
             Console.WriteLine("  --check_interval [interval]      Set the time interval for checking rule timeouts");
+            Console.WriteLine("  --memory_scan_interval [interval] Set the memory scan interval for YARA rules (1-24 hours)");
             Console.WriteLine("  --log_path [path]                Set the path to the text log file");
             Console.WriteLine("  --verbose                        Enable verbose mode");
             Console.WriteLine();

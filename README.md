@@ -2,7 +2,7 @@
 
 ## Concept
 
-**YAMAGoya** (Yet Another Memory Analyzer for malware detection and Guarding Operations with YARA and SIGMA) is a C# application that leverages [Event Tracing for Windows (ETW)](https://learn.microsoft.com/en-us/windows/win32/etw/event-tracing-portal) to capture real-time system events. It applies detection rules written in YAML format (for custom correlation logic) and can also parse **SIGMA** rules for standardized threat detection. In addition, it supports in-memory scanning using **YARA** to detect fileless or stealth malware.
+**YAMAGoya** (Yet Another Memory Analyzer for malware detection and Guarding Operations with YARA and Sigma) is a C# application that leverages [Event Tracing for Windows (ETW)](https://learn.microsoft.com/en-us/windows/win32/etw/event-tracing-portal) to capture real-time system events. It applies detection rules written in YAML format (for custom correlation logic) and can also parse **Sigma** rules for standardized threat detection. In addition, it supports in-memory scanning using **YARA** to detect fileless or stealth malware.
 
 The tool runs entirely in **userland**, avoiding kernel-mode dependencies and simplifying integration with community-based signatures.
 
@@ -21,16 +21,16 @@ The tool runs entirely in **userland**, avoiding kernel-mode dependencies and si
   - [Starting an ETW Session](#starting-an-etw-session)
   - [Stopping an ETW Session](#stopping-an-etw-session)
   - [Applying Detection Rules (YAML)](#applying-detection-rules-yaml)
-  - [Applying Detection Rules (SIGMA)](#applying-detection-rules-sigma)
+  - [Applying Detection Rules (Sigma)](#applying-detection-rules-sigma)
   - [Enabling Memory Scanning](#enabling-memory-scanning)
   - [Monitoring Specific Event Types](#monitoring-specific-event-types)
   - [Logging Configuration](#logging-configuration)
   - [Advanced Configurations](#advanced-configurations)
   - [All-in-One Example](#all-in-one-example)
 - [Creating YAML Rule Files](#creating-yaml-rule-files)
-- [SIGMA Support](#sigma-support)
-  - [Supported SIGMA Categories](#supported-sigma-categories)
-  - [SIGMA to ETW Mapping](#sigma-to-etw-mapping)
+- [Sigma Support](#sigma-support)
+  - [Supported Sigma Categories](#supported-sigma-categories)
+  - [Sigma to ETW Mapping](#sigma-to-etw-mapping)
 - [Configuration and Logs](#configuration-and-logs)
 - [Known Limitations / Caveats](#known-limitations--caveats)
 - [License](#license)
@@ -48,7 +48,7 @@ The tool runs entirely in **userland**, avoiding kernel-mode dependencies and si
 
 - **Multi-Format Detection Rules**  
   - **YAML**: Allows correlating multiple event types using regex or other matching logic.  
-  - **SIGMA**: Parses and applies SIGMA rules for community-driven threat detection.
+  - **Sigma**: Parses and applies Sigma rules for community-driven threat detection.
 
 - **Memory Scanning with YARA**  
   Scans system memory using YARA rules to detect fileless or stealth malware.
@@ -122,13 +122,13 @@ YAMAGoya.exe [options]
 1. Ensure you have Administrator privileges (required for ETW session management)
 2. Prepare your detection rules:
    - For YAML rules: Create `.yaml` or `.yml` files in a folder
-   - For SIGMA rules: Place `.yml` SIGMA rule files in a folder  
+   - For Sigma rules: Place `.yml` Sigma rule files in a folder  
    - For YARA rules: Create `.yar` or `.yara` files in a folder
 
 **Step 2: Start Session and Detection (Choose one method)**
 ```bash
-# Method A: SIGMA rules with comprehensive monitoring
-YAMAGoya.exe --session --sigma "C:\Rules\SIGMA" --all
+# Method A: Sigma rules with comprehensive monitoring
+YAMAGoya.exe --session --sigma "C:\Rules\Sigma" --all
 
 # Method B: YARA memory scanning
 YAMAGoya.exe --session --yara "C:\Rules\YARA" --all
@@ -160,7 +160,7 @@ YAMAGoya.exe --stop
 | `--session, -s`                 | Start an ETW session named `"YAMAGoya"` (stops any existing session first). |
 | `--stop, -x`                    | Stop the active `"YAMAGoya"` ETW session.                                   |
 | `--detect, -d <folder>`         | Load detection rules (YAML) from `<folder>` and start detection.            |
-| `--sigma, -si <folder>`         | Load and apply SIGMA rules from `<folder>` instead of YAML rules.           |
+| `--sigma, -si <folder>`         | Load and apply Sigma rules from `<folder>` instead of YAML rules.           |
 | `--yara, -y <folder>`           | Load and apply YARA rules from `<folder>` for memory scanning.              |
 | `--all, -a`                     | Enable monitoring for all event categories.                                 |
 | `--file, -f`                    | Monitor file **creation** events.                                           |
@@ -204,7 +204,7 @@ YAMAGoya.exe --stop
 Configure advanced detection options:
 - **Kill Process Mode**: Automatically terminate detected malicious processes
 - **Rule Format Selection**: 
-  - Use SIGMA rules (standardized threat detection)
+  - Use Sigma rules (standardized threat detection)
   - Use custom YAML rules (custom correlation logic)
 - **YARA Memory Scanning**: Enable memory scanning with configurable interval (default: 1 hour)
 - **Logging Configuration**:
@@ -240,7 +240,7 @@ YAMAGoya.exe --stop
 YAMAGoya.exe --session --detect .\rules --all --kill --verbose
 ```
 
-### Applying Detection Rules (SIGMA)
+### Applying Detection Rules (Sigma)
 
 ```bash
 YAMAGoya.exe --session --sigma C:\sigma_rules --all
@@ -312,15 +312,15 @@ YAMAGoya.exe --session --session_name "ComprehensiveMonitoring" --detect .\rules
 
 ---
 
-## SIGMA Support
+## Sigma Support
 
-YAMAGoya implements support for [SIGMA](https://github.com/SigmaHQ/sigma), a generic signature format for describing detection rules. SIGMA rules can be used instead of YAMAGoya's custom YAML rules by using the `--sigma` or `-si` command-line option.
+YAMAGoya implements support for [Sigma](https://github.com/SigmaHQ/sigma), a generic signature format for describing detection rules. Sigma rules can be used instead of YAMAGoya's custom YAML rules by using the `--sigma` or `-si` command-line option.
 
-### Supported SIGMA Categories
+### Supported Sigma Categories
 
-The following table shows which SIGMA rule categories are currently supported by YAMAGoya:
+The following table shows which Sigma rule categories are currently supported by YAMAGoya:
 
-| SIGMA Category | Supported | 
+| Sigma Category | Supported | 
 |----------------|:---------:|
 | create_remote_thread | ✓ |
 | create_stream_hash | - |
@@ -353,11 +353,11 @@ The following table shows which SIGMA rule categories are currently supported by
 | wmi_event | ✓ |
 | webserver | - |
 
-### SIGMA to ETW Mapping
+### Sigma to ETW Mapping
 
-YAMAGoya translates SIGMA categories to the appropriate ETW providers and event IDs. Here's how the supported categories are mapped:
+YAMAGoya translates Sigma categories to the appropriate ETW providers and event IDs. Here's how the supported categories are mapped:
 
-| SIGMA Category | ETW Provider | Event IDs |
+| Sigma Category | ETW Provider | Event IDs |
 |----------------|--------------|-----------|
 | create_remote_thread | Microsoft-Windows-Kernel-Audit-API-Calls | 5 |
 | dns_query | Microsoft-Windows-DNS-Client | 3000-3020 |
@@ -449,7 +449,7 @@ rules:
 1. **Elevated Privileges**: Administrator rights are necessary for managing ETW sessions, writing to the Windows Event Log, terminating processes, etc.
 2. **Performance Overhead**: Monitoring multiple providers or high event volumes may result in significant log output; adjust your rules accordingly.
 3. **ETW Bypass**: Advanced malware may bypass userland detection methods. Consider complementing with kernel-level or network-based solutions.
-4. **SIGMA Category Support**: Not all SIGMA categories are currently supported. See the [Supported SIGMA Categories](#supported-sigma-categories) section for details.
+4. **Sigma Category Support**: Not all Sigma categories are currently supported. See the [Supported Sigma Categories](#supported-sigma-categories) section for details.
 
 ---
 
@@ -464,7 +464,7 @@ See the [LICENSE](LICENSE.txt) file for details.
 ### General Questions
 
 **Q: What types of malware can YAMAGoya detect?**  
-A: YAMAGoya can detect a wide range of malware including fileless malware, remote access trojans, backdoors, and other malicious software that exhibits suspicious behavior traceable through ETW events. The detection scope depends on the rules you configure. However, by default, no rules are set in YAMAGoya to detect it, so you need to prepare SIGMA or YARA rules.
+A: YAMAGoya can detect a wide range of malware including fileless malware, remote access trojans, backdoors, and other malicious software that exhibits suspicious behavior traceable through ETW events. The detection scope depends on the rules you configure. However, by default, no rules are set in YAMAGoya to detect it, so you need to prepare Sigma or YARA rules.
 
 **Q: Does running YAMAGoya impact system performance?**  
 A: YAMAGoya is designed to minimize performance impact, but monitoring multiple ETW providers simultaneously can consume system resources. For optimal performance with minimal overhead, consider enabling only the necessary event categories for your use case.
@@ -478,13 +478,13 @@ A: No, YAMAGoya is intended as a complementary tool for advanced threat detectio
 A: YAMAGoya requires administrative privileges to manage ETW sessions. Make sure to run the application as an administrator (right-click → Run as administrator).
 
 **Q: How do I minimize false positives?**  
-A: Tune your rules carefully and iteratively. Start with more specific patterns, test in your environment, and gradually refine rules. For SIGMA rules, consider adjusting the confidence or severity thresholds to match your risk tolerance.
+A: Tune your rules carefully and iteratively. Start with more specific patterns, test in your environment, and gradually refine rules. For Sigma rules, consider adjusting the confidence or severity thresholds to match your risk tolerance.
 
-**Q: What's the difference between YAML and SIGMA rule formats?**  
+**Q: What's the difference between YAML and Sigma rule formats?**  
 A: YAMAGoya's custom YAML rules allow for flexible event correlation across different ETW providers. 
 
 **Q: Where can I find sample rules to get started?**  
-A: The [SIGMA GitHub repository](https://github.com/SigmaHQ/sigma) and [YARA rule GitHub repositories](https://github.com/InQuest/awesome-yara?#rules) offer extensive collections of community-maintained rules.
+A: The [Sigma GitHub repository](https://github.com/SigmaHQ/sigma) and [YARA rule GitHub repositories](https://github.com/InQuest/awesome-yara?#rules) offer extensive collections of community-maintained rules.
 
 **Q: How frequently should I scan with YARA rules?**  
 A: The default scan interval is 1 hour, which balances detection effectiveness with system performance. Adjust based on your security requirements and system capacity. High-risk environments might benefit from more frequent scanning.

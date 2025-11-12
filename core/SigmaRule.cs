@@ -1,13 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using YamlDotNet.Serialization;
 
 namespace YAMAGoya.Core
 {
     /// <summary>
-    /// Represents a SIGMA rule.
+    /// Represents a Sigma rule.
     /// </summary>
     [SuppressMessage("Usage", "CA1812:Avoid uninstantiated internal classes", Justification = "Instantiated via reflection during YAML deserialization.")]
     internal sealed class SigmaRule
@@ -74,7 +73,7 @@ namespace YAMAGoya.Core
     }
 
     /// <summary>
-    /// Represents the log source section of a SIGMA rule.
+    /// Represents the log source section of a Sigma rule.
     /// </summary>
     internal sealed class LogSource
     {
@@ -98,7 +97,7 @@ namespace YAMAGoya.Core
     }
 
     /// <summary>
-    /// Represents the detection section of a SIGMA rule.
+    /// Represents the detection section of a Sigma rule.
     /// </summary>
     internal sealed class Detection
     {

@@ -2,7 +2,7 @@
 
 ## コンセプト
 
-**YAMAGoya** (Yet Another Memory Analyzer for malware detection and Guarding Operations with YARA and SIGMA) は、[Event Tracing for Windows (ETW)](https://learn.microsoft.com/en-us/windows/win32/etw/event-tracing-portal) を活用してリアルタイムシステムイベントを捕捉するC#アプリケーションです。YAML形式で記述された検知ルール（カスタムルール用）を適用し、標準化された脅威検知のための**SIGMA**ルールも解析できます。さらに、**YARA**を使用したメモリ内スキャンをサポートし、ファイルレスまたはステルスマルウェアの検知を行います。
+**YAMAGoya** (Yet Another Memory Analyzer for malware detection and Guarding Operations with YARA and Sigma) は、[Event Tracing for Windows (ETW)](https://learn.microsoft.com/en-us/windows/win32/etw/event-tracing-portal) を活用してリアルタイムシステムイベントを捕捉するC#アプリケーションです。YAML形式で記述された検知ルール（カスタムルール用）を適用し、標準化された脅威検知のための**Sigma**ルールも解析できます。さらに、**YARA**を使用したメモリ内スキャンをサポートし、ファイルレスまたはステルスマルウェアの検知を行います。
 
 このツールは**ユーザーランド**で動作し、カーネルモードの依存関係を回避し、コミュニティベースのシグネチャとの統合を簡素化します。
 
@@ -19,16 +19,16 @@
   - [ETWセッションの開始](#etwセッションの開始)
   - [ETWセッションの停止](#etwセッションの停止)
   - [検知ルールの適用（YAML）](#検知ルールの適用yaml)
-  - [検知ルールの適用（SIGMA）](#検知ルールの適用sigma)
+  - [検知ルールの適用（Sigma）](#検知ルールの適用sigma)
   - [メモリスキャンの有効化](#メモリスキャンの有効化)
   - [特定イベントタイプの監視](#特定イベントタイプの監視)
   - [ログ設定](#ログ設定)
   - [高度な設定](#高度な設定)
   - [オールインワンの例](#オールインワンの例)
 - [YAMLルールファイルの作成](#yamlルールファイルの作成)
-- [SIGMAサポート](#sigmaサポート)
-  - [サポートされるSIGMAカテゴリ](#サポートされるsigmaカテゴリ)
-  - [SIGMAからETWへのマッピング](#sigmaからetwへのマッピング)
+- [Sigmaサポート](#sigmaサポート)
+  - [サポートされるSigmaカテゴリ](#サポートされるsigmaカテゴリ)
+  - [SigmaからETWへのマッピング](#sigmaからetwへのマッピング)
 - [設定とログ](#設定とログ)
 - [既知の制限事項・注意点](#既知の制限事項注意点)
 - [ライセンス](#ライセンス)
@@ -46,7 +46,7 @@
 
 - **マルチフォーマット検知ルール**  
   - **YAML**: 正規表現やその他のマッチングロジックを使用して複数のイベントを相関分析できます。  
-  - **SIGMA**: コミュニティ主導の脅威検知のためのSIGMAルールを使用できます。
+  - **Sigma**: コミュニティ主導の脅威検知のためのSigmaルールを使用できます。
 
 - **YARAによるメモリスキャン**  
   YARAルールを使用してメモリをスキャンし、ファイルレスまたはステルスマルウェアを検知します。
@@ -120,13 +120,13 @@ YAMAGoya.exe [options]
 1. 管理者権限があることを確認してください（ETWセッション管理に必要）
 2. 検知ルールを準備します：
    - YAMLルールの場合：フォルダに`.yaml`または`.yml`ファイルを作成
-   - SIGMAルールの場合：フォルダに`.yml`SIGMAルールファイルを配置  
+   - Sigmaルールの場合：フォルダに`.yml`Sigmaルールファイルを配置  
    - YARAルールの場合：フォルダに`.yar`または`.yara`ファイルを作成
 
 **ステップ2: セッション開始と検知（以下のいずれかの方法を選択）**
 ```bash
-# 方法A: 包括的な監視でSIGMAルールを使用
-YAMAGoya.exe --session --sigma "C:\Rules\SIGMA" --all
+# 方法A: 包括的な監視でSigmaルールを使用
+YAMAGoya.exe --session --sigma "C:\Rules\Sigma" --all
 
 # 方法B: YARAメモリスキャン
 YAMAGoya.exe --session --yara "C:\Rules\YARA" --all
@@ -158,7 +158,7 @@ YAMAGoya.exe --stop
 | `--session, -s`                 | `"YAMAGoya"`という名前のETWセッションを開始（既存セッションがあれば先に停止） |
 | `--stop, -x`                    | アクティブな`"YAMAGoya"`ETWセッションを停止                         |
 | `--detect, -d <folder>`         | `<folder>`から検知ルール（YAML）を読み込み、検知を開始              |
-| `--sigma, -si <folder>`         | YAMLルールの代わりに`<folder>`からSIGMAルールを読み込み・適用         |
+| `--sigma, -si <folder>`         | YAMLルールの代わりに`<folder>`からSigmaルールを読み込み・適用         |
 | `--yara, -y <folder>`           | メモリスキャン用に`<folder>`からYARAルールを読み込み・適用           |
 | `--all, -a`                     | すべてのイベントカテゴリの監視を有効化                              |
 | `--file, -f`                    | ファイル**作成**イベントを監視                                      |
@@ -201,7 +201,7 @@ YAMAGoya.exe --stop
 高度な検知オプションを設定：
 - **Kill Process Mode**: 検知された悪意のあるプロセスを自動的に終了
 - **Rule Format Selection**: 
-  - SIGMAルールを使用（標準化された脅威検知）
+  - Sigmaルールを使用（標準化された脅威検知）
   - カスタムYAMLルールを使用（カスタム相関ロジック）
 - **YARA Memory Scanning**: メモリスキャンを有効化（デフォルト：1時間）
 - **Logging Configuration**:
@@ -237,7 +237,7 @@ YAMAGoya.exe --stop
 YAMAGoya.exe --session --detect .\rules --all --kill --verbose
 ```
 
-### 検知ルールの適用（SIGMA）
+### 検知ルールの適用（Sigma）
 
 ```bash
 YAMAGoya.exe --session --sigma C:\sigma_rules --all
@@ -309,15 +309,15 @@ YAMAGoya.exe --session --session_name "ComprehensiveMonitoring" --detect .\rules
 
 ---
 
-## SIGMAサポート
+## Sigmaサポート
 
-YAMAGoyaは、検知ルールを記述するための汎用シグネチャ形式である[SIGMA](https://github.com/SigmaHQ/sigma)をサポートしています。`--sigma`または`-si`コマンドラインオプションを使用することで、YAMAGoyaのカスタムYAMLルールの代わりにSIGMAルールを使用できます。
+YAMAGoyaは、検知ルールを記述するための汎用シグネチャ形式である[Sigma](https://github.com/SigmaHQ/sigma)をサポートしています。`--sigma`または`-si`コマンドラインオプションを使用することで、YAMAGoyaのカスタムYAMLルールの代わりにSigmaルールを使用できます。
 
-### サポートされるSIGMAカテゴリ
+### サポートされるSigmaカテゴリ
 
-以下の表は、現在YAMAGoyaでサポートされているSIGMAルールカテゴリを示しています：
+以下の表は、現在YAMAGoyaでサポートされているSigmaルールカテゴリを示しています：
 
-| SIGMAカテゴリ | サポート状況 | 
+| Sigmaカテゴリ | サポート状況 | 
 |----------------|:---------:|
 | create_remote_thread | ✓ |
 | create_stream_hash | - |
@@ -350,11 +350,11 @@ YAMAGoyaは、検知ルールを記述するための汎用シグネチャ形式
 | wmi_event | ✓ |
 | webserver | - |
 
-### SIGMAからETWへのマッピング
+### SigmaからETWへのマッピング
 
-YAMAGoyaはSIGMAカテゴリを適切なETWプロバイダーとイベントIDに変換します。サポートされているカテゴリのマッピングは以下の通りです：
+YAMAGoyaはSigmaカテゴリを適切なETWプロバイダーとイベントIDに変換します。サポートされているカテゴリのマッピングは以下の通りです：
 
-| SIGMAカテゴリ | ETWプロバイダー | イベントID |
+| Sigmaカテゴリ | ETWプロバイダー | イベントID |
 |----------------|--------------|-----------|
 | create_remote_thread | Microsoft-Windows-Kernel-Audit-API-Calls | 5 |
 | dns_query | Microsoft-Windows-DNS-Client | 3000-3020 |
@@ -446,7 +446,7 @@ rules:
 1. **管理者権限での実行**: ETWセッションの管理、Windowsイベントログへの書き込み、プロセスの終了などには管理者権限が必要です。
 2. **パフォーマンスオーバーヘッド**: 複数のプロバイダーや大量のイベントボリュームを監視すると、大量のログ出力が発生する可能性があります。それに応じてルールを調整してください。
 3. **ETW Bypass**: 高度なマルウェアはユーザーランドの検知方法を回避する可能性があります。カーネルレベルまたはネットワークベースのソリューションで補完することを検討してください。
-4. **SIGMAカテゴリサポート**: 現在、すべてのSIGMAカテゴリがサポートされているわけではありません。詳細については[サポートされるSIGMAカテゴリ](#サポートされるsigmaカテゴリ)のセクションを参照してください。
+4. **Sigmaカテゴリサポート**: 現在、すべてのSigmaカテゴリがサポートされているわけではありません。詳細については[サポートされるSigmaカテゴリ](#サポートされるsigmaカテゴリ)のセクションを参照してください。
 
 ---
 
@@ -461,7 +461,7 @@ rules:
 ### 一般的な質問
 
 **Q: YAMAGoyaはどのような種類のマルウェアを検知できますか？**  
-A: YAMAGoyaは、ETWイベントを通じて追跡可能な疑わしい動作を示すファイルレスマルウェア、リモートアクセストロイの木馬、バックドア、その他の悪意のあるソフトウェアを含む、幅広いマルウェアを検知できます。検知範囲は設定するルールによって異なります。ただし、デフォルトではYAMAGoyaに検知するルールは設定されていないため、SIGMAまたはYARAルールを準備する必要があります。
+A: YAMAGoyaは、ETWイベントを通じて追跡可能な疑わしい動作を示すファイルレスマルウェア、リモートアクセストロイの木馬、バックドア、その他の悪意のあるソフトウェアを含む、幅広いマルウェアを検知できます。検知範囲は設定するルールによって異なります。ただし、デフォルトではYAMAGoyaに検知するルールは設定されていないため、SigmaまたはYARAルールを準備する必要があります。
 
 **Q: YAMAGoyaの実行はシステムパフォーマンスに影響しますか？**  
 A: YAMAGoyaはパフォーマンスへの影響を最小限に抑えるように設計されていますが、複数のETWプロバイダーを同時に監視するとシステムリソースを消費する可能性があります。最小限のオーバーヘッドで最適なパフォーマンスを得るには、使用ケースに必要なイベントカテゴリのみを有効化することを検討してください。
@@ -475,13 +475,13 @@ A: いいえ、YAMAGoyaは高度な脅威検知と分析のための補完的な
 A: YAMAGoyaはETWセッションを管理するために管理者権限を必要とします。管理者としてアプリケーションを実行してください（右クリック→管理者として実行）。
 
 **Q: 誤検知を最小限に抑えるにはどうすればよいですか？**  
-A: ルールを慎重かつ反復的に調整してください。より具体的なパターンから始めて、環境でテストし、段階的にルールを改良してください。SIGMAルールの場合は、リスク許容度に合わせて信頼度や重要度の閾値を調整することを検討してください。
+A: ルールを慎重かつ反復的に調整してください。より具体的なパターンから始めて、環境でテストし、段階的にルールを改良してください。Sigmaルールの場合は、リスク許容度に合わせて信頼度や重要度の閾値を調整することを検討してください。
 
-**Q: YAMLとSIGMAルール形式の違いは何ですか？**  
+**Q: YAMLとSigmaルール形式の違いは何ですか？**  
 A: YAMAGoyaのカスタムYAMLルールは、異なるETWプロバイダー間での柔軟なイベント相関を可能にします。
 
 **Q: 開始するためのサンプルルールはどこで見つけられますか？**  
-A: [SIGMA GitHubリポジトリ](https://github.com/SigmaHQ/sigma)と[YARA rule GitHubリポジトリ](https://github.com/InQuest/awesome-yara?#rules)では、コミュニティによって維持されているルールの広範なコレクションが提供されています。
+A: [Sigma GitHubリポジトリ](https://github.com/SigmaHQ/sigma)と[YARA rule GitHubリポジトリ](https://github.com/InQuest/awesome-yara?#rules)では、コミュニティによって維持されているルールの広範なコレクションが提供されています。
 
 **Q: YARAルールでのスキャン頻度はどのくらいにすべきですか？**  
 A: デフォルトのスキャン間隔は1時間で、検知効果とシステムパフォーマンスのバランスを取っています。セキュリティ要件とシステム容量に基づいて調整してください。高リスク環境では、より頻繁なスキャンが有益な場合があります。

@@ -12,13 +12,13 @@ using DynamicExpresso;
 namespace YAMAGoya.Core
 {
     /// <summary>
-    /// Responsible for loading and evaluating SIGMA rules.
+    /// Responsible for loading and evaluating Sigma rules.
     /// </summary>
     internal static class SigmaDetector
     {
         private static readonly string[] OrSeparators = new[] { "or", "OR" };
 
-        // Mapping from SIGMA categories to ETW providers
+        // Mapping from Sigma categories to ETW providers
         private static readonly Dictionary<string, List<(string ProviderName, int[] EventIds)>> CategoryToProviderMapping = new()
         {
             { "create_remote_thread", new List<(string, int[])> { ("Microsoft-Windows-Kernel-Audit-API-Calls", new[] { 5 }) } },
@@ -38,7 +38,7 @@ namespace YAMAGoya.Core
             { "wmi_event", new List<(string, int[])> { ("Microsoft-Windows-WMI-Activity", Enumerable.Range(1, 50).ToArray()) } },
         };
 
-        // Mapping ETW fields to SIGMA fields (by category)
+        // Mapping ETW fields to Sigma fields (by category)
         private static readonly Dictionary<string, Dictionary<string, string>> CategoryFieldMapping = new()
         {
             { "process_creation", new Dictionary<string, string>
@@ -211,9 +211,9 @@ namespace YAMAGoya.Core
         };
 
         /// <summary>
-        /// Loads SIGMA rule files from the specified folder, normalizing selectors.
+        /// Loads Sigma rule files from the specified folder, normalizing selectors.
         /// </summary>
-        /// <param name="folder">Folder path containing SIGMA rule files (YAML files).</param>
+        /// <param name="folder">Folder path containing Sigma rule files (YAML files).</param>
         /// <returns>List of SigmaRule objects.</returns>
         public static List<SigmaRule> LoadSigmaRules(string folder)
         {
@@ -221,7 +221,7 @@ namespace YAMAGoya.Core
                 .Concat(Directory.GetFiles(folder, "*.yml", SearchOption.AllDirectories)).ToArray();
 
             if (yamlFiles.Length == 0)
-                throw new InvalidOperationException("[ERROR] No SIGMA rule files found in folder: " + folder);
+                throw new InvalidOperationException("[ERROR] No Sigma rule files found in folder: " + folder);
 
             var deserializer = new DeserializerBuilder()
                 .WithNamingConvention(CamelCaseNamingConvention.Instance)
@@ -273,37 +273,37 @@ namespace YAMAGoya.Core
                     if (rule != null)
                     {
                         sigmaRules.Add(rule);
-                        Console.WriteLine("[INFO] Loading SIGMA rule from " + filePath);
+                        Console.WriteLine("[INFO] Loading Sigma rule from " + filePath);
                     }
                     else
                     {
-                        Console.WriteLine($"[WARNING] SIGMA rule file '{filePath}' deserialized to null.");
+                        Console.WriteLine($"[WARNING] Sigma rule file '{filePath}' deserialized to null.");
                     }
                 }
                 catch (IOException ex)
                 {
                     errorCount++;
-                    Console.WriteLine($"[ERROR] Failed to load SIGMA rule file '{filePath}' (IO error): {ex.Message}");
+                    Console.WriteLine($"[ERROR] Failed to load Sigma rule file '{filePath}' (IO error): {ex.Message}");
                 }
                 catch (YamlDotNet.Core.YamlException ex)
                 {
                     errorCount++;
-                    Console.WriteLine($"[ERROR] Failed to load SIGMA rule file '{filePath}' (YAML parsing error): {ex.Message}");
+                    Console.WriteLine($"[ERROR] Failed to load Sigma rule file '{filePath}' (YAML parsing error): {ex.Message}");
                 }
                 catch (ArgumentException ex)
                 {
                     errorCount++;
-                    Console.WriteLine($"[ERROR] Failed to load SIGMA rule file '{filePath}' (argument error): {ex.Message}");
+                    Console.WriteLine($"[ERROR] Failed to load Sigma rule file '{filePath}' (argument error): {ex.Message}");
                 }
                 catch (InvalidOperationException ex)
                 {
                     errorCount++;
-                    Console.WriteLine($"[ERROR] Failed to load SIGMA rule file '{filePath}' (invalid operation): {ex.Message}");
+                    Console.WriteLine($"[ERROR] Failed to load Sigma rule file '{filePath}' (invalid operation): {ex.Message}");
                 }
                 // Unexpected exceptions are rethrown
             }
 
-            Console.WriteLine($"[INFO] Successfully loaded {sigmaRules.Count} SIGMA rules. (Skipped {errorCount} files with errors)");
+            Console.WriteLine($"[INFO] Successfully loaded {sigmaRules.Count} Sigma rules. (Skipped {errorCount} files with errors)");
             return sigmaRules;
         }
 
@@ -353,7 +353,7 @@ namespace YAMAGoya.Core
         }
 
         /// <summary>
-        /// Evaluates whether the specified SIGMA rule matches the ETW event.
+        /// Evaluates whether the specified Sigma rule matches the ETW event.
         /// </summary>
         public static bool EvaluateSigmaDetection(TraceEvent data, SigmaRule sigma)
         {
@@ -404,7 +404,7 @@ namespace YAMAGoya.Core
             if (result)
             {
                 // Always display important detection information regardless of debug level
-                Console.WriteLine($"[DETECTION] SIGMA Rule '{sigma.Title}' (ID: {sigma.Id}) matched");
+                Console.WriteLine($"[DETECTION] Sigma Rule '{sigma.Title}' (ID: {sigma.Id}) matched");
                 Console.WriteLine($"[DETECTION] Description: {sigma.Description}");
                 Console.WriteLine($"[DETECTION] Severity: {sigma.Level}");
                 
@@ -501,7 +501,7 @@ namespace YAMAGoya.Core
         }
 
         /// <summary>
-        /// Checks if the ETW event is relevant to the SIGMA rule's category.
+        /// Checks if the ETW event is relevant to the Sigma rule's category.
         /// </summary>
         private static bool IsEventRelevantForRule(TraceEvent data, SigmaRule sigma)
         {
@@ -552,7 +552,7 @@ namespace YAMAGoya.Core
                 var sigmaFieldName = parts[0];
                 var operation = parts.Length > 1 ? parts[1] : "equals";
 
-                // Map SIGMA field name to ETW field name
+                // Map Sigma field name to ETW field name
                 string etwFieldName = MapSigmaFieldToEtwField(sigmaFieldName, category);
                 
                 // Get the value from the corresponding ETW field
@@ -639,7 +639,7 @@ namespace YAMAGoya.Core
                 {
                     if (result)
                     {
-                        Console.WriteLine($"[DEBUG] SIGMA Detection: Field '{sigmaFieldName}' with value '{fieldValueStr}' matched {operation} condition '{conditionValueStr}'");
+                        Console.WriteLine($"[DEBUG] Sigma Detection: Field '{sigmaFieldName}' with value '{fieldValueStr}' matched {operation} condition '{conditionValueStr}'");
                     }
                 }
 
@@ -664,7 +664,7 @@ namespace YAMAGoya.Core
         }
 
         /// <summary>
-        /// Maps SIGMA rule field name to ETW event field name.
+        /// Maps Sigma rule field name to ETW event field name.
         /// </summary>
         private static string MapSigmaFieldToEtwField(string sigmaFieldName, string category)
         {

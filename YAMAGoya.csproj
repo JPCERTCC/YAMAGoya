@@ -48,13 +48,13 @@
     <SelfContained>true</SelfContained>
     <PublishSingleFile>true</PublishSingleFile>
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
-    <AssemblyVersion>0.0.1</AssemblyVersion>
-    <FileVersion>0.0.1</FileVersion>
+    <AssemblyVersion>1.0.0</AssemblyVersion>
+    <FileVersion>1.0.0</FileVersion>
     <Company>JPCERT/CC</Company>
     <Authors>JPCERT/CC</Authors>
     <Product>YAMAGoya</Product>
-    <Description>Yet Another Memory Analyzer for malware detection and Guarding Operations with YARA and SIGMA</Description>
-    <Copyright>© 1996-2025 JPCERT/CC</Copyright>
+    <Description>Yet Another Memory Analyzer for malware detection and Guarding Operations with YARA and Sigma</Description>
+    <Copyright>1996-2025 JPCERT/CC</Copyright>
   </PropertyGroup>
 
   <ItemGroup>
@@ -73,11 +73,11 @@
 
   <ItemGroup>
     <PackageReference Include="Antlr4.Runtime.Standard" Version="4.13.1" />
-    <PackageReference Include="DynamicExpresso.Core" Version="2.17.2" />
+    <PackageReference Include="DynamicExpresso.Core" Version="2.19.2" />
     <PackageReference Include="MaterialDesignColors" Version="5.2.1" />
     <PackageReference Include="MaterialDesignThemes" Version="5.2.1" />
-    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.1.19" />
-    <PackageReference Include="System.Diagnostics.EventLog" Version="9.0.3" />
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.1.24" />
+    <PackageReference Include="System.Diagnostics.EventLog" Version="9.0.9" />
     <PackageReference Include="YamlDotNet" Version="16.3.0" />
   </ItemGroup>
 

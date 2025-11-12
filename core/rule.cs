@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
 
 namespace YAMAGoya.Core
 {
